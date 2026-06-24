@@ -1,0 +1,3825 @@
+VIRTUALIZATION ADMINISTRATION TOOLKIT - FULL DETAILED DOCUMENTATION
+Generated for the local project folder: virtualization-toolkit
+Document type: Plain text (.txt)
+
+========================================================================
+1. WHAT THIS TOOLKIT IS
+========================================================================
+
+The Virtualization Administration Toolkit is a Python-based infrastructure reporting
+and administration project. It has two major parts:
+
+1. Excel workbook generator
+   - Creates a professional Virtualization administration workbook named:
+     output/Premium_Virtualization_Administration_Toolkit.xlsx
+   - Uses Python and openpyxl.
+   - Builds a multi-sheet workbook for VM inventory, hosts, datastores,
+     capacity planning, snapshots, backups, licensing, reference data,
+     instructions, and an executive dashboard.
+   - Includes sample enterprise virtualization data, formulas, dropdowns,
+     conditional formatting, charts, workbook styling, and navigation tiles.
+
+2. Flask web console
+   - Runs a browser-based administration console at:
+     http://127.0.0.1:5000
+   - Uses SQLite for persistence.
+   - Lets users view and add VMs, hosts, datastores, VLANs, backup jobs,
+     clusters, and users.
+   - Provides dashboard metrics, permission-controlled actions, protected
+     delete rules, live dropdowns, and an Excel export button.
+
+The project is designed for virtualization administrators, infrastructure engineers,
+managed service providers, consultants, IT operations teams, and organizations
+that need structured virtualization documentation and reporting.
+
+The toolkit is not a direct replacement for management server, Host, or Virtualization Aria. It
+is an inventory, governance, reporting, and workbook-generation system. It
+does not connect to management server automatically in the current code. Instead, it
+uses sample data, manually entered data, and SQLite-backed web records.
+
+========================================================================
+2. MAIN FEATURES AT A GLANCE
+========================================================================
+
+Core platform features:
+- Python 3.12 project.
+- openpyxl-based Excel workbook creation.
+- Flask-based web console.
+- SQLite database for live web console records.
+- Gunicorn-ready Linux container deployment.
+- Dockerfile included.
+- Modular source layout.
+- Separate modules for each workbook worksheet.
+- Role-based access with admin and client accounts.
+- Explicit user permissions for create, delete, export, and user management.
+- Server-side permission enforcement.
+- Live dropdown lists sourced from current resource tables.
+- Protected delete workflow for assigned resources.
+- Audit event table for create, delete, and permission changes.
+- Professional workbook styling.
+- Commercial product assets and preview images.
+
+Workbook features:
+- Cover page.
+- Instructions sheet.
+- Reference Data sheet.
+- Executive Dashboard sheet.
+- VM Inventory sheet with 114 inventory fields.
+- Host Inventory sheet.
+- Datastore capacity sheet.
+- Capacity Planner sheet.
+- Snapshot Tracker sheet.
+- Backup Register sheet.
+- License sheet.
+- Excel tables with filters.
+- Freeze panes.
+- Data validation dropdowns.
+- Formula-driven KPI cards.
+- Native Excel charts.
+- Conditional formatting for risk and status visibility.
+- Reference lists and named ranges.
+- Dependency warnings such as "Assigned to VM - must not delete".
+
+Web console features:
+- Login page.
+- Dashboard page.
+- VM Inventory page.
+- Hosts page.
+- Datastores page.
+- VLANs page.
+- Backups page.
+- Admin page.
+- Modal forms for adding resources.
+- Toast notifications.
+- Delete buttons shown only when the user has delete permission.
+- Export Excel button shown only when the user has workbook export permission.
+- Admin superuser model.
+- Client read-only model by default.
+
+========================================================================
+3. PROJECT STRUCTURE
+========================================================================
+
+Main files:
+- main.py
+  Runs the Excel workbook generator.
+
+- web.py
+  Runs the Flask web application.
+
+- Dockerfile
+  Builds a Python 3.12 slim container and runs Gunicorn on port 5000.
+
+- requirements.txt
+  Python dependencies:
+  - openpyxl>=3.1.5
+  - Flask>=3.0.3
+  - gunicorn>=22.0.0
+
+- README.md
+  Main project documentation.
+
+- PRODUCT_DESCRIPTION.md
+  Buyer-facing product summary.
+
+- FEATURE_LIST.md
+  Feature summary for the toolkit.
+
+Workbook source folder:
+- src/cover.py
+- src/instructions.py
+- src/reference_data.py
+- src/dashboard.py
+- src/vm_inventory.py
+- src/host_inventory.py
+- src/datastore.py
+- src/capacity.py
+- src/snapshot.py
+- src/backup.py
+- src/license.py
+- src/styles.py
+
+Web application folder:
+- webapp/app.py
+- webapp/database.py
+- webapp/services.py
+- webapp/templates/login.html
+- webapp/templates/dashboard.html
+- webapp/static/js/app.js
+- webapp/static/css/app.css
+
+Output folder:
+- output/Premium_Virtualization_Administration_Toolkit.xlsx
+
+Database folder:
+- instance/toolkit.sqlite3
+
+Preview assets:
+- assets/preview/dashboard-preview.png
+- assets/preview/web-console-preview.png
+- assets/preview/vm-inventory-preview.png
+- assets/preview/cover-preview.png
+- assets/preview/capacity-planner-preview.png
+- assets/preview/admin-permissions-preview.png
+- assets/preview/add-vm-submit-preview.png
+- assets/preview/dashboard-stats-preview.png
+
+========================================================================
+4. HOW TO RUN IT
+========================================================================
+
+Create and activate a Python virtual environment:
+
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+Install dependencies:
+
+pip install -r requirements.txt
+
+Run the Excel workbook generator:
+
+python main.py
+
+Expected output:
+
+output/Premium_Virtualization_Administration_Toolkit.xlsx
+
+Run the web console:
+
+Set these values before the first run of a new database:
+
+VIRTUALIZATION_TOOLKIT_SECRET_KEY
+VIRTUALIZATION_TOOLKIT_ADMIN_PASSWORD
+VIRTUALIZATION_TOOLKIT_CLIENT_PASSWORD
+
+python web.py
+
+Open this URL:
+
+http://127.0.0.1:5000
+
+Recommended production environment variables:
+
+VIRTUALIZATION_TOOLKIT_SECRET_KEY
+Purpose: Flask session signing secret.
+Default in development: process-local random value.
+Production recommendation: set this to a long persistent random secret.
+
+VIRTUALIZATION_TOOLKIT_ADMIN_PASSWORD
+Purpose: initial admin user password.
+Required before first database initialization.
+
+VIRTUALIZATION_TOOLKIT_CLIENT_PASSWORD
+Purpose: initial client user password.
+Required before first database initialization.
+
+Docker build:
+
+docker build -t virtualization-administration-toolkit .
+
+Docker run:
+
+docker run -p 5000:5000 ^
+  -e VIRTUALIZATION_TOOLKIT_SECRET_KEY="replace-with-a-secure-secret" ^
+  -e VIRTUALIZATION_TOOLKIT_ADMIN_PASSWORD="replace-with-admin-password" ^
+  -e VIRTUALIZATION_TOOLKIT_CLIENT_PASSWORD="replace-with-client-password" ^
+  virtualization-administration-toolkit
+
+For persistent data in Docker, mount /app/instance to a persistent volume.
+
+========================================================================
+5. SECURITY, ROLES, AND PERMISSIONS
+========================================================================
+
+Authentication:
+- Users sign in through /login.
+- Passwords are stored as Werkzeug password hashes.
+- Successful login stores user_id in the Flask session.
+- Logout clears the session.
+
+Built-in roles:
+
+admin:
+- Superuser.
+- Automatically has every permission.
+- Permission checkboxes appear checked and disabled in the users table.
+- Can create resources, delete resources, export workbook, and manage users.
+
+client:
+- Read-only by default.
+- Can view dashboard and resource tables.
+- Cannot create, delete, export, or manage users unless permissions are
+  explicitly granted.
+
+Assignable permissions:
+
+resource.create
+- Label: Create resources.
+- Description: Create VMs, hosts, datastores, VLANs, backup jobs, and clusters.
+- Controls visibility and server access for Add buttons and POST resource APIs.
+
+resource.delete
+- Label: Delete resources.
+- Description: Delete resources when dependency protection allows it.
+- Controls delete buttons and DELETE resource APIs.
+
+workbook.export
+- Label: Export workbook.
+- Description: Download the premium Excel workbook from the web console.
+- Controls the Export Excel button and /export/workbook route.
+
+users.manage
+- Label: Manage users.
+- Description: Create users and assign or revoke permissions.
+- Controls Add User, permissions table, and user API routes.
+
+Server-side enforcement:
+- Permissions are enforced in Flask route decorators.
+- Hidden UI alone is not relied on for security.
+- Unauthorized API attempts return:
+  {"message": "You do not have permission."}
+  with HTTP 403.
+
+Audit events:
+- Create resource, delete resource, create user, and permission update actions
+  are written to the audit_events table.
+- Stored fields: actor, action, entity_type, entity_name, created_at.
+
+========================================================================
+6. WEB CONSOLE PAGE: LOGIN
+========================================================================
+
+URL:
+- /login
+
+Purpose:
+- Authenticates users before they can access the dashboard or APIs.
+
+Visible elements:
+- Brand mark: VT.
+- Title: Virtualization Administration Toolkit.
+- Description: Enterprise infrastructure console for governed VM, host,
+  datastore, backup, and reference administration.
+- Username field.
+- Password field.
+- Sign in button.
+- Flash error area for expired security tokens.
+- Flash error area for invalid credentials.
+
+Username field:
+- HTML name: username.
+- Required.
+- Browser autocomplete: username.
+- Server strips leading and trailing whitespace.
+
+Password field:
+- HTML name: password.
+- Required.
+- Type: password.
+- Browser autocomplete: current-password.
+
+Sign in behavior:
+- POST /login checks users table by username.
+- Password is verified using check_password_hash.
+- On success:
+  - Existing session is cleared.
+  - session["user_id"] is set.
+  - User is redirected to /.
+- On failure:
+  - A flash message appears: Invalid username or password.
+
+========================================================================
+7. WEB CONSOLE GLOBAL LAYOUT
+========================================================================
+
+After login, the web console uses a fixed sidebar and main application shell.
+
+Sidebar:
+- Brand area:
+  - VT mark.
+  - Virtualization Toolkit.
+  - Enterprise Console.
+- Navigation buttons:
+  - Dashboard.
+  - VM Inventory.
+  - Hosts.
+  - Datastores.
+  - VLANs.
+  - Backups.
+  - Admin.
+- Footer:
+  - Shows display name.
+  - Shows role in uppercase.
+
+Topbar:
+- Main title: Enterprise Virtualization Administration Toolkit.
+- Subtitle: Live resource governance, assignment protection, and Excel
+  reporting.
+- Export Excel button:
+  - Requires workbook.export.
+  - Calls /export/workbook.
+  - Generates and downloads the Excel workbook.
+- Logout button:
+  - Calls /logout.
+  - Clears session and returns to login page.
+
+Vendor strip:
+- Virtualization badge.
+- Proxmox badge.
+- Red Hat badge.
+- Ubuntu badge.
+- Datastore badge.
+- Backup badge.
+
+Modal system:
+- Used for Add Cluster, Add Host, Add Datastore, Add VLAN, Add Backup Job,
+  Add VM, and Add User.
+- Uses a centered modal dialog with a close button.
+- Click outside the modal closes it.
+- Cancel button closes it.
+- Save button submits JSON to the relevant API endpoint.
+- Success closes modal, shows toast, and refreshes dashboard/resources.
+- Error shows toast with server or client-side error message.
+
+Toast notifications:
+- Bottom-right status messages.
+- Normal messages use navy background.
+- Errors use red background.
+- Toast auto-hides after about 3.6 seconds.
+
+Permission-hidden controls:
+- Elements with data-required-permission are hidden when the user lacks the
+  required permission.
+
+========================================================================
+8. WEB CONSOLE PAGE: DASHBOARD
+========================================================================
+
+Navigation name:
+- Dashboard.
+
+HTML view id:
+- view-overview.
+
+Purpose:
+- Executive web view of live SQLite inventory and governance status.
+
+KPI cards:
+
+Total VMs:
+- Counts all rows in vms.
+- SQL source: SELECT COUNT(*) FROM vms.
+
+Production VMs:
+- Counts VMs where environment equals Production.
+
+Powered On:
+- Counts VMs where power_state equals Powered On.
+
+Powered Off:
+- Counts VMs where power_state equals Powered Off.
+- Displayed with critical styling.
+
+Snapshots:
+- Counts VMs where snapshot equals Yes.
+- Displayed with warning styling.
+
+Critical Servers:
+- Counts VMs where criticality equals Critical.
+- Displayed with critical styling.
+
+Hosts:
+- Counts rows in hosts.
+
+Datastores:
+- Counts rows in datastores.
+
+Backups Enabled:
+- Counts VMs where backup_enabled equals 1.
+
+Windows:
+- Counts VMs where operating_system contains Windows.
+
+Linux:
+- Counts VMs where operating_system contains Linux, Ubuntu, Red Hat, or Photon.
+
+Dashboard panels:
+
+Storage Utilization:
+- Shows percentage of used datastore capacity.
+- Formula in service layer:
+  storage_used_percent = SUM(used_gb) / SUM(capacity_gb) * 100
+- Shows used GB and total capacity GB.
+- Uses a horizontal meter.
+
+Power State:
+- Live distribution of power_state values.
+- Shows each category count and percentage.
+
+Environment:
+- Live distribution of VM environment values.
+- Usually Production, Development, Test, DR, etc.
+
+Operating System:
+- Groups operating systems into Windows, Linux, and Other.
+
+Backup Compliance:
+- Groups VMs into Enabled and Disabled based on backup_enabled.
+
+Criticality:
+- Groups VMs by criticality, such as Critical, High, Medium, Low.
+
+Datastore Utilization:
+- Lists up to 8 datastores ordered by used percentage descending.
+- Shows used GB, capacity GB, and percentage.
+
+Operational Warnings:
+- Shows prioritized warnings from the service layer:
+  - Datastores above 80%.
+  - VMs with snapshots.
+  - Outdated Guest Tools.
+  - Backups disabled.
+  - Critical VMs.
+- If none exist, shows "No active governance warnings".
+
+Governance Model:
+- Static guidance list shown in the dashboard:
+  - Dropdowns read live hosts, clusters, datastores, VLANs, and backup jobs.
+  - Admin users are superusers with all permissions.
+  - Client users are read-only until rights are assigned.
+  - User permissions can be granted or revoked in Admin.
+  - Assigned resources return a protected-delete warning.
+
+Recent Virtual Machines table:
+- Shows up to 8 most recently inserted VMs.
+- Columns:
+  - VM Name.
+  - Environment.
+  - Power.
+  - Criticality.
+  - Host.
+  - Datastore.
+
+Dashboard refresh:
+- JavaScript calls /api/summary.
+- Updates KPI text, storage meter width, distributions, warnings, and recent VM
+  rows.
+
+========================================================================
+9. WEB CONSOLE PAGE: VM INVENTORY
+========================================================================
+
+Navigation name:
+- VM Inventory.
+
+HTML view id:
+- view-vms.
+
+Purpose:
+- Lists virtual machines and allows authorized users to add VMs.
+
+Visible toolbar:
+- Heading: VM Inventory.
+- Text: Add a VM using live dropdowns from source resources.
+- Add VM button.
+
+Add VM button:
+- Requires permission: resource.create.
+- Opens "Add Virtual Machine" modal.
+
+VM table columns:
+- VM Name.
+- Environment.
+- OS.
+- Host.
+- Cluster.
+- Datastore.
+- VLAN.
+- Power.
+- Backup Job.
+- Snapshot.
+- Criticality.
+- Action column only if user has resource.delete.
+
+Displayed VM data is joined from:
+- vms.
+- hosts.
+- clusters.
+- datastores.
+- vlans.
+- backup_jobs.
+
+Delete behavior:
+- If user has resource.delete, each row has Delete button.
+- DELETE /api/resources/vms/<id>.
+- VMs are deleted without dependency guard because VMs are the dependent
+  resource in this model.
+
+Add Virtual Machine modal fields:
+
+VM Name:
+- Internal field: name.
+- Type: text.
+- Required: yes.
+- Must be unique in database.
+- Represents the inventory name of the VM.
+
+Description:
+- Internal field: description.
+- Type: text.
+- Required: no.
+- Optional human description.
+
+Environment:
+- Internal field: environment.
+- Type: select.
+- Options:
+  - Production.
+  - Development.
+  - Test.
+  - DR.
+- Default service value if omitted: Production.
+
+Business Unit:
+- Internal field: business_unit.
+- Type: text.
+- Default UI value: Infrastructure.
+- Represents owning business area.
+
+Owner:
+- Internal field: owner.
+- Type: text.
+- Default UI value: Infrastructure Operations.
+- Represents operational owner.
+
+Application:
+- Internal field: application.
+- Type: text.
+- Default UI value: Platform Services.
+- Represents hosted application or workload.
+
+Operating System:
+- Internal field: operating_system.
+- Type: select.
+- Options:
+  - Windows Server 2022.
+  - Ubuntu Server 24.04.
+  - Red Hat Enterprise Linux 9.
+  - Photon OS.
+- Default service value if omitted: Windows Server 2022.
+
+Host:
+- Internal field: host_id.
+- Type: reference dropdown.
+- Required: yes.
+- Source: live hosts list from /api/reference-options.
+- Label shown: host hostname.
+- When selected, JavaScript syncs Cluster automatically if the host's cluster
+  can be matched.
+
+Cluster:
+- Internal field: cluster_id.
+- Type: reference dropdown.
+- Required: yes.
+- Source: live clusters list from /api/reference-options.
+- Can be auto-filled when Host changes.
+
+Datastore:
+- Internal field: datastore_id.
+- Type: reference dropdown.
+- Required: yes.
+- Source: live datastores list from /api/reference-options.
+
+Folder:
+- Internal field: folder.
+- Type: text.
+- Default UI and service value: /Production/Applications.
+- Represents VM folder path.
+
+Resource Pool:
+- Internal field: resource_pool.
+- Type: text.
+- Default UI and service value: RP-Production.
+
+vCPU:
+- Internal field: vcpu.
+- Type: number.
+- Default UI and service value: 2.
+
+RAM GB:
+- Internal field: ram_gb.
+- Type: number.
+- Default UI and service value: 8.
+
+Disk GB:
+- Internal field: disk_gb.
+- Type: number.
+- Default UI and service value: 100.
+
+IP Address:
+- Internal field: ip_address.
+- Type: text.
+- Required: no.
+
+VLAN:
+- Internal field: vlan_id.
+- Type: reference dropdown.
+- Required: yes.
+- Source: live VLAN list from /api/reference-options.
+
+Backup Enabled:
+- Internal field: backup_enabled.
+- Type: select.
+- Options:
+  - true.
+  - false.
+- Service conversion:
+  - true, "true", "1", or 1 become database value 1.
+  - anything else becomes database value 0.
+
+Backup Job:
+- Internal field: backup_job_id.
+- Type: reference dropdown.
+- Required: no.
+- Source: live backup job list from /api/reference-options.
+- Empty value is stored as NULL.
+
+Snapshot:
+- Internal field: snapshot.
+- Type: select.
+- Options:
+  - No.
+  - Yes.
+- Default service value if omitted: No.
+
+Guest Tools:
+- Internal field: guest_tools.
+- Type: select.
+- Options:
+  - Current.
+  - Outdated.
+  - Not Installed.
+  - Not Running.
+- Default service value if omitted: Current.
+- Used by dashboard warnings when not equal to Current.
+
+Power State:
+- Internal field: power_state.
+- Type: select.
+- Options:
+  - Powered On.
+  - Powered Off.
+  - Suspended.
+- Default service value if omitted: Powered On.
+
+Criticality:
+- Internal field: criticality.
+- Type: select.
+- Options:
+  - Critical.
+  - High.
+  - Medium.
+  - Low.
+- Default service value if omitted: Medium.
+
+Notes:
+- Internal field: notes.
+- Type: textarea.
+- Required: no.
+- Full-width field in modal.
+
+========================================================================
+10. WEB CONSOLE PAGE: HOSTS
+========================================================================
+
+Navigation name:
+- Hosts.
+
+HTML view id:
+- view-hosts.
+
+Purpose:
+- Lists hosts and allows authorized users to add host records.
+
+Visible toolbar:
+- Heading: Hosts.
+- Text: New hosts are immediately available in VM Inventory dropdowns.
+- Add Host button.
+
+Add Host button:
+- Requires permission: resource.create.
+- Opens "Add Host" modal.
+
+Host table columns:
+- Hostname.
+- Cluster.
+- Version.
+- Management IP.
+- License.
+- Health.
+- Assigned VMs.
+- Action column only if user has resource.delete.
+
+Assigned VMs:
+- Count of vms where vms.host_id equals the host id.
+
+Delete behavior:
+- DELETE /api/resources/hosts/<id>.
+- Protected by dependency guard.
+- Host cannot be deleted if one or more VMs are assigned to it.
+- Error example:
+  "<hostname> is assigned to 1 VM(s) and must not be deleted."
+
+Add Host modal fields:
+
+Hostname:
+- Internal field: hostname.
+- Type: text.
+- Required: yes.
+- Must be unique.
+
+Cluster:
+- Internal field: cluster_id.
+- Type: reference dropdown.
+- Required: yes.
+- Source: live clusters.
+
+Version:
+- Internal field: version.
+- Type: text.
+- Default UI and service value: Generic Hypervisor 2026.
+
+Build:
+- Internal field: build.
+- Type: text.
+- Default UI and service value: 22380479.
+
+CPU:
+- Internal field: cpu.
+- Type: text.
+- Default UI value: 2 x Intel Xeon, 32 cores.
+- Default service value: 2 x Intel Xeon, 32 cores.
+
+Memory:
+- Internal field: memory.
+- Type: text.
+- Default UI and service value: 512 GB.
+
+NICs:
+- Internal field: nics.
+- Type: number.
+- Default UI and service value: 4.
+
+Management IP:
+- Internal field: management_ip.
+- Type: text.
+- Required in UI.
+
+License:
+- Internal field: license.
+- Type: select.
+- Options:
+  - Enterprise Plus.
+  - Standard.
+  - Management Server Standard.
+- Default service value if omitted: Enterprise Plus.
+
+Health:
+- Internal field: health.
+- Type: select.
+- Options:
+  - Healthy.
+  - Warning.
+  - Degraded.
+  - Critical.
+  - Disconnected.
+- Default service value if omitted: Healthy.
+
+Notes:
+- Internal field: notes.
+- Type: textarea.
+- Full-width.
+
+========================================================================
+11. WEB CONSOLE PAGE: DATASTORES
+========================================================================
+
+Navigation name:
+- Datastores.
+
+HTML view id:
+- view-datastores.
+
+Purpose:
+- Lists datastore records and allows authorized users to add datastores.
+
+Visible toolbar:
+- Heading: Datastores.
+- Text: Deletion is blocked when a datastore is assigned to one or more VMs.
+- Add Datastore button.
+
+Add Datastore button:
+- Requires permission: resource.create.
+- Opens "Add Datastore" modal.
+
+Datastore table columns:
+- Datastore.
+- Type.
+- Cluster.
+- Capacity GB.
+- Used GB.
+- % Used.
+- Assigned VMs.
+- Action column only if user has resource.delete.
+
+% Used:
+- Calculated in SQL as:
+  ROUND((used_gb * 100.0) / NULLIF(capacity_gb, 0), 1)
+
+Assigned VMs:
+- Count of vms where vms.datastore_id equals the datastore id.
+
+Delete behavior:
+- DELETE /api/resources/datastores/<id>.
+- Protected by dependency guard.
+- Datastore cannot be deleted if one or more VMs are assigned.
+
+Add Datastore modal fields:
+
+Datastore Name:
+- Internal field: name.
+- Type: text.
+- Required: yes.
+- Must be unique.
+
+Type:
+- Internal field: datastore_type.
+- Type: select.
+- Options:
+  - VMFS.
+  - NFS.
+  - vSAN.
+  - VVol.
+- Default service value if omitted: VMFS.
+
+Cluster:
+- Internal field: cluster_id.
+- Type: reference dropdown.
+- Required: yes.
+- Source: live clusters.
+
+Capacity GB:
+- Internal field: capacity_gb.
+- Type: number.
+- Required: yes.
+- Default UI and service value: 1024.
+
+Used GB:
+- Internal field: used_gb.
+- Type: number.
+- Required: yes.
+- Default UI and service value: 0.
+
+Notes:
+- Internal field: notes.
+- Type: textarea.
+- Full-width.
+
+========================================================================
+12. WEB CONSOLE PAGE: VLANS
+========================================================================
+
+Navigation name:
+- VLANs.
+
+HTML view id:
+- view-vlans.
+
+Purpose:
+- Lists governed network/VLAN references and allows authorized users to add
+  VLANs.
+
+Visible toolbar:
+- Heading: VLANs.
+- Text: Network references are governed and protected when assigned.
+- Add VLAN button.
+
+Add VLAN button:
+- Requires permission: resource.create.
+- Opens "Add VLAN" modal.
+
+VLAN table columns:
+- VLAN.
+- CIDR.
+- Security Zone.
+- Assigned VMs.
+- Action column only if user has resource.delete.
+
+Assigned VMs:
+- Count of vms where vms.vlan_id equals the VLAN id.
+
+Delete behavior:
+- DELETE /api/resources/vlans/<id>.
+- Protected by dependency guard.
+- VLAN cannot be deleted if one or more VMs are assigned.
+
+Add VLAN modal fields:
+
+VLAN Name:
+- Internal field: name.
+- Type: text.
+- Required: yes.
+- Must be unique.
+
+CIDR:
+- Internal field: cidr.
+- Type: text.
+- Default UI value: 10.0.0.0/24.
+
+Security Zone:
+- Internal field: security_zone.
+- Type: select.
+- Options:
+  - Restricted.
+  - Internal.
+  - Development.
+  - Test.
+  - DMZ.
+- Default service value if omitted: Internal.
+
+Notes:
+- Internal field: notes.
+- Type: textarea.
+- Full-width.
+
+========================================================================
+13. WEB CONSOLE PAGE: BACKUPS
+========================================================================
+
+Navigation name:
+- Backups.
+
+HTML view id:
+- view-backup_jobs.
+
+Purpose:
+- Lists backup jobs and allows authorized users to add backup job records.
+
+Visible toolbar:
+- Heading: Backup Register.
+- Text: Backup jobs can be assigned directly during VM creation.
+- Add Backup Job button.
+
+Add Backup Job button:
+- Requires permission: resource.create.
+- Opens "Add Backup Job" modal.
+
+Backup job table columns:
+- Backup Job.
+- Schedule.
+- Repository.
+- Retention.
+- Status.
+- Assigned VMs.
+- Action column only if user has resource.delete.
+
+Assigned VMs:
+- Count of vms where vms.backup_job_id equals the backup job id.
+
+Delete behavior:
+- DELETE /api/resources/backup_jobs/<id>.
+- Protected by dependency guard.
+- Backup job cannot be deleted if assigned to one or more VMs.
+
+Add Backup Job modal fields:
+
+Backup Job:
+- Internal field: name.
+- Type: text.
+- Required: yes.
+- Must be unique.
+
+Schedule:
+- Internal field: schedule.
+- Type: text.
+- Default UI and service value: Daily 22:00.
+
+Repository:
+- Internal field: repository.
+- Type: text.
+- Default UI and service value: Repo-Primary.
+
+Retention:
+- Internal field: retention.
+- Type: text.
+- Default UI and service value: 30 daily.
+
+Status:
+- Internal field: status.
+- Type: select.
+- Options:
+  - Success.
+  - Warning.
+  - Failed.
+- Default service value if omitted: Success.
+
+========================================================================
+14. WEB CONSOLE PAGE: ADMIN
+========================================================================
+
+Navigation name:
+- Admin.
+
+HTML view id:
+- view-admin.
+
+Purpose:
+- Manages clusters, users, and explicit permissions.
+
+Visible toolbar:
+- Heading: Admin & Client Access.
+- Text: Current role: <ROLE>. Admins can assign or revoke user rights.
+- Add Cluster button.
+- Add User button.
+
+Add Cluster button:
+- Requires permission: resource.create.
+- Opens "Add Cluster" modal.
+
+Add User button:
+- Requires permission: users.manage.
+- Opens "Add User" modal.
+
+Role Controls panel:
+- States that users are read-only by default.
+- Recommends granting create, delete, export, or user-management rights only
+  when needed.
+
+Permission Catalog panel:
+- Lists all permissions from the permissions table.
+- Shows each permission label and description.
+
+Users & Permissions section:
+- Requires users.manage.
+- Shows users table with permission checkboxes.
+- Checkbox changes immediately PUT to /api/users/<id>/permissions.
+
+Users table columns:
+- Username.
+- Display Name.
+- Role.
+- One column per assignable permission:
+  - Create resources.
+  - Delete resources.
+  - Export workbook.
+  - Manage users.
+
+User permission checkbox behavior:
+- For admin role:
+  - Checked.
+  - Disabled.
+  - Text says Superuser.
+- For client role:
+  - Checked only when explicit permission exists.
+  - Enabled.
+  - Text says Granted.
+
+Clusters table columns:
+- Cluster.
+- Environment.
+- Status.
+- Notes.
+- Action column only if user has resource.delete.
+
+Cluster delete behavior:
+- DELETE /api/resources/clusters/<id>.
+- Protected by dependency guard.
+- Cluster cannot be deleted when assigned to:
+  - hosts.
+  - datastores.
+  - VMs.
+
+Add Cluster modal fields:
+
+Cluster Name:
+- Internal field: name.
+- Type: text.
+- Required: yes.
+- Must be unique.
+
+Environment:
+- Internal field: environment.
+- Type: select.
+- Options:
+  - Production.
+  - Development.
+  - Test.
+  - DR.
+- Default service value if omitted: Production.
+
+Status:
+- Internal field: status.
+- Type: select.
+- Options:
+  - Active.
+  - Maintenance.
+  - Retired.
+- Default service value if omitted: Active.
+
+Notes:
+- Internal field: notes.
+- Type: textarea.
+- Full-width.
+
+Add User modal fields:
+
+Username:
+- Internal field: username.
+- Type: text.
+- Required: yes.
+- Must be unique.
+
+Display Name:
+- Internal field: display_name.
+- Type: text.
+- Required: yes.
+- If omitted at service layer, defaults to username.
+
+Role:
+- Internal field: role.
+- Type: select.
+- Options:
+  - client.
+  - admin.
+- Service validates that role must be admin or client.
+- Default service value if omitted: client.
+
+Temporary Password:
+- Internal field: password.
+- Type: password.
+- Required: yes.
+- Stored as generated password hash.
+
+========================================================================
+15. WEB API ROUTES
+========================================================================
+
+HTML routes:
+
+GET /login
+- Shows login page.
+
+POST /login
+- Authenticates user credentials.
+
+GET /logout
+- Clears session and redirects to login.
+
+GET /
+- Requires login.
+- Shows dashboard web console.
+
+JSON and export routes:
+
+GET /api/summary
+- Requires login.
+- Returns dashboard summary, distributions, warnings, storage usage, and recent
+  VM rows.
+
+GET /api/reference-options
+- Requires login.
+- Returns live dropdown options:
+  - clusters.
+  - hosts.
+  - datastores.
+  - vlans.
+  - backup_jobs.
+
+GET /api/resources/<resource>
+- Requires login.
+- Supported resources:
+  - clusters.
+  - hosts.
+  - datastores.
+  - vlans.
+  - backup_jobs.
+  - vms.
+- Returns resource list.
+- Unsupported resources return HTTP 404.
+
+POST /api/resources/<resource>
+- Requires login.
+- Requires resource.create.
+- Creates supported resource.
+- Returns created resource with HTTP 201.
+- Missing required field returns HTTP 400.
+- Database integrity failure returns HTTP 409.
+- Invalid value returns HTTP 400.
+
+DELETE /api/resources/<resource>/<id>
+- Requires login.
+- Requires resource.delete.
+- Deletes a resource if dependency guards allow.
+- Returns HTTP 200 when deleted.
+- Returns HTTP 409 when assigned dependency blocks deletion.
+- Returns HTTP 404 when not found.
+
+GET /export/workbook
+- Requires login.
+- Requires workbook.export.
+- Runs VirtualizationAdministrationToolkit(PROJECT_ROOT).run().
+- Sends Premium_Virtualization_Administration_Toolkit.xlsx as attachment.
+
+GET /api/permissions
+- Requires login.
+- Requires users.manage.
+- Returns permission catalog.
+
+GET /api/users
+- Requires login.
+- Requires users.manage.
+- Returns users and explicit permissions.
+
+POST /api/users
+- Requires login.
+- Requires users.manage.
+- Creates a user.
+
+PUT /api/users/<user_id>/permissions
+- Requires login.
+- Requires users.manage.
+- Replaces a user's explicit permissions with the submitted list.
+
+========================================================================
+16. DATABASE SCHEMA
+========================================================================
+
+users:
+- id: integer primary key.
+- username: unique text.
+- display_name: text.
+- role: admin or client.
+- password_hash: text.
+
+permissions:
+- code: primary key text.
+- label: text.
+- description: text.
+
+user_permissions:
+- user_id: references users(id), cascade delete.
+- permission_code: references permissions(code), cascade delete.
+- Primary key: user_id plus permission_code.
+
+clusters:
+- id.
+- name: unique text.
+- environment.
+- status.
+- notes.
+
+hosts:
+- id.
+- hostname: unique text.
+- cluster_id: references clusters(id).
+- version.
+- build.
+- cpu.
+- memory.
+- nics.
+- management_ip.
+- license.
+- health.
+- notes.
+
+datastores:
+- id.
+- name: unique text.
+- datastore_type.
+- cluster_id: references clusters(id).
+- capacity_gb.
+- used_gb.
+- notes.
+
+vlans:
+- id.
+- name: unique text.
+- cidr.
+- security_zone.
+- notes.
+
+backup_jobs:
+- id.
+- name: unique text.
+- schedule.
+- repository.
+- retention.
+- status.
+
+vms:
+- id.
+- name: unique text.
+- description.
+- environment.
+- business_unit.
+- owner.
+- application.
+- operating_system.
+- host_id: references hosts(id).
+- cluster_id: references clusters(id).
+- datastore_id: references datastores(id).
+- folder.
+- resource_pool.
+- vcpu.
+- ram_gb.
+- disk_gb.
+- ip_address.
+- vlan_id: references vlans(id).
+- backup_enabled: integer, 1 or 0.
+- backup_job_id: nullable reference to backup_jobs(id).
+- snapshot.
+- guest_tools.
+- power_state.
+- criticality.
+- notes.
+
+audit_events:
+- id.
+- actor.
+- action.
+- entity_type.
+- entity_name.
+- created_at: default CURRENT_TIMESTAMP.
+
+Foreign key behavior:
+- SQLite foreign_keys PRAGMA is enabled.
+- user_permissions cascade on delete.
+- Most infrastructure references do not use cascade delete. Application-level
+  guards are used to prevent deleting assigned resources.
+
+========================================================================
+17. PROTECTED DELETE RULES
+========================================================================
+
+Clusters cannot be deleted when assigned to:
+- hosts through hosts.cluster_id.
+- datastores through datastores.cluster_id.
+- VMs through vms.cluster_id.
+
+Hosts cannot be deleted when assigned to:
+- VMs through vms.host_id.
+
+Datastores cannot be deleted when assigned to:
+- VMs through vms.datastore_id.
+
+VLANs cannot be deleted when assigned to:
+- VMs through vms.vlan_id.
+
+Backup jobs cannot be deleted when assigned to:
+- VMs through vms.backup_job_id.
+
+VMs:
+- No delete guard.
+- Can be deleted directly when user has resource.delete.
+
+Protected delete response:
+- HTTP 409.
+- Message format:
+  <resource name> is assigned to <count> <label>(s) and must not be deleted.
+
+========================================================================
+18. WEB STATUS COLORS AND VALUE MEANINGS
+========================================================================
+
+Status pill fields:
+- health.
+- status.
+- power_state.
+- criticality.
+- snapshot.
+
+Green status values:
+- Healthy.
+- Success.
+- Powered On.
+- Low.
+- No.
+
+Amber status values:
+- Warning.
+- Medium.
+- Yes.
+- Suspended.
+- Any unknown status also defaults to amber.
+
+Red status values:
+- Critical.
+- Failed.
+- Powered Off.
+- High.
+
+Dashboard warning severities:
+- critical.
+- warning.
+- healthy.
+
+========================================================================
+19. WORKBOOK GENERATOR OVERVIEW
+========================================================================
+
+Entry point:
+- main.py.
+
+Main class:
+- VirtualizationAdministrationToolkit.
+
+Output file:
+- Premium_Virtualization_Administration_Toolkit.xlsx.
+
+Workbook generation sequence:
+1. Create openpyxl Workbook.
+2. Configure calculation:
+   - calcMode = auto.
+   - fullCalcOnLoad = True.
+   - forceFullCalc = True.
+3. Remove the default openpyxl sheet.
+4. Build worksheets in this order:
+   - Cover.
+   - Instructions.
+   - Reference Data.
+   - Executive Dashboard.
+   - VM Inventory.
+   - Host Inventory.
+   - Datastore.
+   - Capacity Planner.
+   - Snapshot Tracker.
+   - Backup Register.
+   - License.
+5. Save to output folder.
+6. Verify that output file exists.
+
+Common workbook style features:
+- Gridlines hidden.
+- Landscape page setup on most sheets.
+- Fit-to-width printing.
+- Frozen panes on table sheets.
+- Excel tables with filters.
+- Corporate color palette:
+  - navy: 1F4E78.
+  - blue: 5B9BD5.
+  - light blue: D9EAF7.
+  - green: 70AD47.
+  - amber: FFC000.
+  - red: C00000.
+  - dark gray: 404040.
+  - medium gray: 808080.
+  - light gray: D9D9D9.
+  - white: FFFFFF.
+- Fonts mainly use Calibri and Calibri Light.
+
+========================================================================
+20. WORKBOOK SHEET: COVER
+========================================================================
+
+Sheet name:
+- Cover.
+
+Purpose:
+- Premium report front page and navigation hub.
+
+Main visible sections:
+- Brand band.
+- Title block.
+- Metadata panel.
+- Navigation tiles.
+- Footer.
+
+Brand band:
+- Text: ENTERPRISE VIRTUALIZATION ADMINISTRATION TOOLKIT.
+- Uses navy/blue premium background.
+
+Title:
+- Enterprise Virtualization Administration Toolkit.
+
+Subtitle:
+- Professional Infrastructure Reporting Workbook.
+
+Metadata panel:
+- Report Information.
+- Version: Version 1.0.0.
+- Author: <Author Name>.
+- Company: <Company Name>.
+
+Navigation tiles:
+- Dashboard -> Executive Dashboard.
+- VM Inventory -> VM Inventory.
+- Hosts -> Host Inventory.
+- Datastores -> Datastore.
+- Capacity -> Capacity Planner.
+- Snapshots -> Snapshot Tracker.
+- Backups -> Backup Register.
+- Licensing -> License.
+- Reference Data -> Reference Data.
+- Instructions -> Instructions.
+
+Footer:
+- (c) 2026 <Company Name>. All rights reserved.
+
+Page setup:
+- Landscape.
+- A4 paper.
+- Narrow margins.
+- Gridlines hidden.
+
+========================================================================
+21. WORKBOOK SHEET: INSTRUCTIONS
+========================================================================
+
+Sheet name:
+- Instructions.
+
+Purpose:
+- Provides buyer-facing or user-facing guidance for using the workbook.
+
+Table name:
+- WorkbookInstructionsTable.
+
+Columns:
+- Step.
+- Area.
+- Instruction.
+- Owner.
+
+Default instruction rows:
+
+Step 1:
+- Area: Workbook.
+- Instruction: Review the Cover and Instructions sheets before updating data.
+- Owner: Workbook Owner.
+
+Step 2:
+- Area: VM Inventory.
+- Instruction: Replace sample VM records with exported virtualization inventory data.
+- Owner: Virtualization Administrator.
+
+Step 3:
+- Area: Operations.
+- Instruction: Update Host, datastore, backup, snapshot, license, and capacity
+  worksheets on the same reporting cycle.
+- Owner: Infrastructure Operations.
+
+Step 4:
+- Area: Dashboard.
+- Instruction: Open the workbook in Excel and recalculate formulas to refresh
+  dashboard KPIs and chart values.
+- Owner: Report Consumer.
+
+Step 5:
+- Area: Commercial Use.
+- Instruction: Customize branding, sample data, and support details before
+  client delivery or marketplace publication.
+- Owner: Product Owner.
+
+Layout:
+- Title merged across A1:D2.
+- Table headers on row 4.
+- Freeze panes at A5.
+- Instruction column wraps text.
+
+========================================================================
+22. WORKBOOK SHEET: REFERENCE DATA
+========================================================================
+
+Sheet name:
+- Reference Data.
+
+Purpose:
+- Stores governed dropdown values and dependency status for workbook fields.
+- Creates workbook-level defined names used by data validation dropdowns.
+
+Protection:
+- Sheet protection enabled.
+- Reference value cells are unlocked for editing.
+
+Top title:
+- Reference Data - Governed Dropdown Lists.
+
+Instruction note:
+- Use this sheet to manage dropdown values. If Deletion Status says
+  "Assigned to VM - must not delete", remove or reassign the VM first.
+
+Each reference block has 3 columns:
+- Value list title.
+- Assigned Count.
+- Deletion Status.
+
+Deletion Status formula:
+- Blank if the value cell is blank.
+- "Assigned to VM - must not delete" when assigned count is above 0.
+- "Safe to delete" otherwise.
+
+Reference lists:
+
+Hosts:
+- Defined name: RefHosts.
+- Default values:
+  - host-prd-01.company.local.
+  - host-prd-02.company.local.
+  - host-dev-01.company.local.
+  - host-tst-01.company.local.
+- Assignment source: VM Inventory / Host.
+- Live defined range points to Host Inventory A2:A1000.
+
+Clusters:
+- Defined name: RefClusters.
+- Default values:
+  - Cluster-Production.
+  - Cluster-Development.
+  - Cluster-Test.
+  - Cluster-DR.
+- Assignment source: VM Inventory / Cluster.
+- Live defined range points to Host Inventory I2:I1000.
+
+Datastores:
+- Defined name: RefDatastores.
+- Default values:
+  - DS-PRD-01.
+  - DS-PRD-02.
+  - DS-DEV-01.
+  - DS-TST-01.
+- Assignment source: VM Inventory / Datastore.
+- Live defined range points to Datastore A2:A1000.
+
+VLANs:
+- Defined name: RefVLANs.
+- Default values:
+  - VLAN-120.
+  - VLAN-230.
+  - VLAN-340.
+- Assignment source: VM Inventory / VLAN.
+
+Backup Jobs:
+- Defined name: RefBackupJobs.
+- Default values:
+  - Daily-Production.
+  - Weekly-Development.
+  - Critical-SQL-Logs.
+  - Legacy-Test-VMs.
+  - Not Assigned.
+- Assignment source: VM Inventory / Backup Job.
+- Live defined range points to Backup Register A9:A1000.
+
+Repositories:
+- Defined name: RefRepositories.
+- Default values:
+  - Repo-Primary.
+  - Repo-Development.
+  - Repo-Archive.
+- Assignment source: Backup Register / Repository.
+- Live defined range points to Backup Register C9:C1000.
+
+Folders:
+- Defined name: RefFolders.
+- Default values:
+  - /Production/Applications.
+  - /Development/Databases.
+  - /Test/Web.
+- Assignment source: VM Inventory / Folder.
+
+Resource Pools:
+- Defined name: RefResourcePools.
+- Default values:
+  - RP-Production.
+  - RP-Development.
+  - RP-Test.
+- Assignment source: VM Inventory / Resource Pool.
+
+Owners:
+- Defined name: RefOwners.
+- Default values:
+  - Application Operations.
+  - Database Services.
+  - Web Platform Team.
+  - Infrastructure Operations.
+- Assignment source: VM Inventory / Owner.
+
+Business Units:
+- Defined name: RefBusinessUnits.
+- Default values:
+  - Finance.
+  - Engineering.
+  - Digital.
+  - Infrastructure.
+- Assignment source: VM Inventory / Business Unit.
+
+Management Servers:
+- Defined name: RefManagementServers.
+- Default values:
+  - mgmt-primary.company.local.
+  - mgmt-dr.company.local.
+- Assignment source: VM Inventory / Management Server.
+
+Datacenters:
+- Defined name: RefDatacenters.
+- Default values:
+  - Primary Datacenter.
+  - DR Datacenter.
+- Assignment source: VM Inventory / Datacenter.
+
+Port Groups:
+- Defined name: RefPortGroups.
+- Default values:
+  - PG-PRD-APP.
+  - PG-DEV-DB.
+  - PG-TST-WEB.
+- Assignment source: VM Inventory / Port Group.
+
+Distributed Switches:
+- Defined name: RefDistributedSwitches.
+- Default values:
+  - DSwitch-Production.
+  - DSwitch-Development.
+  - DSwitch-Test.
+- Assignment source: VM Inventory / Distributed Switch.
+
+Security Zones:
+- Defined name: RefSecurityZones.
+- Default values:
+  - Restricted.
+  - Internal.
+  - Development.
+  - Test.
+- Assignment source: VM Inventory / Security Zone.
+
+Support Groups:
+- Defined name: RefSupportGroups.
+- Default values:
+  - Finance Application Support.
+  - Database Services.
+  - Web Platform Team.
+  - Infrastructure Operations.
+- Assignment source: VM Inventory / Support Group.
+
+VM Names:
+- Defined name: RefVMNames.
+- Default values:
+  - APP-PRD-001.
+  - SQL-DEV-002.
+  - WEB-TST-003.
+- Assignment source: VM Inventory / VM Name.
+- Live defined range points to VM Inventory A2:A1000.
+
+Conditional formatting:
+- Assigned to VM - must not delete: red fill.
+- Safe to delete: green fill.
+
+========================================================================
+23. WORKBOOK SHEET: EXECUTIVE DASHBOARD
+========================================================================
+
+Sheet name:
+- Executive Dashboard.
+
+Purpose:
+- Executive summary page for VM estate health, power state, environment,
+  operating systems, backup compliance, criticality, and storage.
+
+Data source:
+- VM Inventory sheet formulas.
+
+Layout:
+- Power BI-inspired canvas.
+- Header panel.
+- KPI card area.
+- Operational Charts area.
+- Hidden-ish summary tables in columns N through AD.
+- Footer note.
+
+Header title:
+- Virtualization Executive Dashboard.
+
+Subtitle:
+- Enterprise VM estate health and operational summary.
+
+KPI cards:
+
+Total VMs:
+- Formula counts populated VM Name values:
+  =COUNTA('VM Inventory'!A:A)-1
+
+Production VMs:
+- Counts Environment = Production.
+
+Powered On:
+- Counts Power State = Powered On.
+
+Powered Off:
+- Counts Power State = Powered Off.
+
+Snapshots:
+- Counts Snapshot = Yes.
+
+Backups Enabled:
+- Counts Backup = Yes.
+
+Critical Servers:
+- Counts Criticality = Critical.
+
+Linux:
+- Counts Operating System containing common Linux terms:
+  Linux, Ubuntu, Red Hat, CentOS, Debian, SUSE.
+
+Windows:
+- Counts Operating System containing Windows.
+
+Chart summary tables:
+- Power State.
+- Environment.
+- OS Distribution.
+- Backup Compliance.
+- Criticality.
+- Storage Utilization.
+
+Charts:
+- Power State pie chart.
+- Environment bar chart.
+- OS Distribution doughnut chart.
+- Backup Compliance doughnut chart.
+- Criticality bar chart.
+- Storage Utilization bar chart.
+
+Footer:
+- KPI values and charts are calculated from the VM Inventory worksheet.
+
+========================================================================
+24. WORKBOOK SHEET: VM INVENTORY
+========================================================================
+
+Sheet name:
+- VM Inventory.
+
+Table name:
+- VMInventoryTable.
+
+Purpose:
+- Primary detailed VM inventory worksheet.
+
+Layout:
+- Headers on row 1.
+- Freeze panes at A2.
+- Landscape page setup.
+- Excel table with filters.
+- Data validation through row 1000.
+- Conditional formatting through row 1000.
+- Auto-fitted columns up to width 32.
+
+All 114 VM inventory columns:
+
+1. VM Name.
+2. Description.
+3. Environment.
+4. Business Unit.
+5. Owner.
+6. Application.
+7. Operating System.
+8. Host.
+9. Cluster.
+10. Datastore.
+11. Folder.
+12. Resource Pool.
+13. vCPU.
+14. RAM (GB).
+15. Disk (GB).
+16. IP Address.
+17. VLAN.
+18. Backup.
+19. Backup Job.
+20. Snapshot.
+21. Guest Tools.
+22. Power State.
+23. Provision Date.
+24. Last Patch Date.
+25. Criticality.
+26. Notes.
+27. Management Server.
+28. Datacenter.
+29. VM MoRef ID.
+30. VM UUID.
+31. BIOS UUID.
+32. Instance UUID.
+33. Guest Hostname.
+34. FQDN.
+35. DNS Domain.
+36. Guest OS Version.
+37. Hardware Version.
+38. Compatibility.
+39. Guest Tools Version.
+40. Guest Tools Status.
+41. CPU Sockets.
+42. Cores per Socket.
+43. CPU Reservation (MHz).
+44. CPU Limit (MHz).
+45. CPU Shares.
+46. CPU Hot Add.
+47. Memory Reservation (GB).
+48. Memory Limit (GB).
+49. Memory Hot Add.
+50. Memory Ballooning (MB).
+51. Guest Tools Time Sync.
+52. Disk Provisioning.
+53. Provisioned Disk (GB).
+54. Used Disk (GB).
+55. Free Disk (GB).
+56. Storage Policy.
+57. Storage Tier.
+58. Storage Path Count.
+59. Storage Latency (ms).
+60. Network Adapter.
+61. MAC Address.
+62. Port Group.
+63. Distributed Switch.
+64. VLAN ID.
+65. NIC Type.
+66. Connected.
+67. IP Allocation.
+68. DNS Servers.
+69. Gateway.
+70. Subnet Mask.
+71. HA Protection.
+72. DRS Automation.
+73. DRS Group.
+74. Affinity Rule.
+75. FT Enabled.
+76. vMotion Enabled.
+77. Encryption.
+78. Secure Boot.
+79. vTPM.
+80. EVC Mode.
+81. Tags.
+82. Custom Attributes.
+83. Cost Center.
+84. Service Tier.
+85. SLA.
+86. Monitoring.
+87. Monitoring Tool.
+88. CMDB CI ID.
+89. Change Request.
+90. Created By.
+91. Last Backup Date.
+92. Last Backup Status.
+93. Backup Repository.
+94. Backup Policy.
+95. RPO (Hours).
+96. RTO (Hours).
+97. Snapshot Count.
+98. Oldest Snapshot Date.
+99. Snapshot Size (GB).
+100. Replication Enabled.
+101. Replication Target.
+102. DR Protection Group.
+103. DR Runbook.
+104. Patch Group.
+105. Maintenance Window.
+106. Antivirus Status.
+107. Compliance Status.
+108. Security Zone.
+109. Firewall Policy.
+110. Owner Email.
+111. Support Group.
+112. Support Hours.
+113. Decommission Date.
+114. Lifecycle State.
+
+Direct dropdown columns and options:
+
+Environment:
+- Production.
+- Development.
+- Test.
+- Staging.
+- DR.
+
+Power State:
+- Powered On.
+- Powered Off.
+- Suspended.
+
+Criticality:
+- Critical.
+- High.
+- Medium.
+- Low.
+
+Backup:
+- Yes.
+- No.
+- Not Required.
+
+Snapshot:
+- Yes.
+- No.
+
+Guest Tools:
+- Current.
+- Outdated.
+- Not Installed.
+- Not Running.
+
+CPU Hot Add:
+- Enabled.
+- Disabled.
+
+Memory Hot Add:
+- Enabled.
+- Disabled.
+
+Guest Tools Time Sync:
+- Enabled.
+- Disabled.
+
+Disk Provisioning:
+- Thin.
+- Thick Lazy Zeroed.
+- Thick Eager Zeroed.
+
+Connected:
+- Yes.
+- No.
+
+IP Allocation:
+- Static.
+- DHCP.
+
+HA Protection:
+- Protected.
+- Not Protected.
+
+DRS Automation:
+- Fully Automated.
+- Partially Automated.
+- Manual.
+
+FT Enabled:
+- Yes.
+- No.
+
+vMotion Enabled:
+- Yes.
+- No.
+
+Encryption:
+- Encrypted.
+- Not Encrypted.
+
+Secure Boot:
+- Enabled.
+- Disabled.
+
+vTPM:
+- Present.
+- Not Present.
+
+Monitoring:
+- Enabled.
+- Disabled.
+
+Last Backup Status:
+- Success.
+- Warning.
+- Failed.
+- Not Configured.
+
+Replication Enabled:
+- Yes.
+- No.
+
+Antivirus Status:
+- Healthy.
+- Warning.
+- Missing.
+
+Compliance Status:
+- Compliant.
+- Non-Compliant.
+- Unknown.
+
+Lifecycle State:
+- Active.
+- Build.
+- Retire.
+- Decommissioned.
+
+Reference dropdown columns:
+- Business Unit -> RefBusinessUnits.
+- Owner -> RefOwners.
+- Host -> RefHosts.
+- Cluster -> RefClusters.
+- Datastore -> RefDatastores.
+- Folder -> RefFolders.
+- Resource Pool -> RefResourcePools.
+- VLAN -> RefVLANs.
+- Backup Job -> RefBackupJobs.
+- Management Server -> RefManagementServers.
+- Datacenter -> RefDatacenters.
+- Port Group -> RefPortGroups.
+- Distributed Switch -> RefDistributedSwitches.
+- VLAN ID -> RefVLANs.
+- Backup Repository -> RefRepositories.
+- Security Zone -> RefSecurityZones.
+- Support Group -> RefSupportGroups.
+
+Numeric columns:
+- vCPU.
+- RAM (GB).
+- Disk (GB).
+- CPU Sockets.
+- Cores per Socket.
+- CPU Reservation (MHz).
+- CPU Limit (MHz).
+- Memory Reservation (GB).
+- Memory Limit (GB).
+- Memory Ballooning (MB).
+- Provisioned Disk (GB).
+- Used Disk (GB).
+- Free Disk (GB).
+- Storage Path Count.
+- Storage Latency (ms).
+- RPO (Hours).
+- RTO (Hours).
+- Snapshot Count.
+- Snapshot Size (GB).
+
+Date columns:
+- Provision Date.
+- Last Patch Date.
+- Last Backup Date.
+- Oldest Snapshot Date.
+- Decommission Date.
+
+Conditional formatting:
+- Power State = Powered On: green.
+- Power State = Powered Off: red.
+- Backup = No: red.
+- Snapshot = Yes: amber.
+- Guest Tools = Outdated: orange.
+- Criticality = Critical: dark red with white text.
+- RAM (GB) > 64: blue highlight.
+- Disk (GB) > 1000: purple highlight.
+
+Status fill behavior:
+- Positive/healthy values such as Yes, Current, Powered On, Low, Enabled,
+  Protected, Success, Healthy, Compliant, Active, Present, Encrypted receive
+  green fill.
+- Risk/bad values such as No, Outdated, Powered Off, Critical, Disabled,
+  Not Protected, Failed, Missing, Non-Compliant, Retire, Not Configured,
+  Not Present, Not Encrypted receive red fill.
+- Warning/medium values such as Warning, Medium, High, Unknown, Build receive
+  amber fill.
+
+Sample VM records:
+- APP-PRD-001.
+- SQL-DEV-002.
+- WEB-TST-003.
+
+========================================================================
+25. WORKBOOK SHEET: HOST INVENTORY
+========================================================================
+
+Sheet name:
+- Host Inventory.
+
+Table name:
+- HostInventoryTable.
+
+Purpose:
+- Records host-level infrastructure information and deletion safety status.
+
+Columns:
+- Hostname.
+- Version.
+- Build.
+- CPU.
+- Memory.
+- NICs.
+- VM Count.
+- Datastores.
+- Cluster.
+- Management IP.
+- License.
+- Health.
+- Notes.
+- Assigned VM Count.
+- Deletion Status.
+
+Assigned VM Count formula:
+- Counts VM Inventory Host values matching this host:
+  =COUNTIF('VM Inventory'!$H:$H,A<row>)
+
+Deletion Status formula:
+- If Assigned VM Count > 0:
+  Assigned to VM - must not delete
+- Else:
+  Safe to delete
+
+Dropdowns:
+
+License:
+- Enterprise Plus.
+- Standard.
+- Management Server Standard.
+
+Health:
+- Healthy.
+- Warning.
+- Degraded.
+- Critical.
+- Disconnected.
+
+Conditional formatting:
+- Deletion Status = Assigned to VM - must not delete: red.
+- Deletion Status = Safe to delete: green.
+
+Health fill:
+- Healthy: green.
+- Warning or Degraded: amber.
+- Critical or Disconnected: red.
+
+Sample hosts:
+- host-prd-01.company.local.
+- host-prd-02.company.local.
+- host-dev-01.company.local.
+
+========================================================================
+26. WORKBOOK SHEET: DATASTORE
+========================================================================
+
+Sheet name:
+- Datastore.
+
+Table name:
+- DatastoreCapacityTable.
+
+Purpose:
+- Tracks datastore capacity, utilization risk, assigned VM count, and deletion
+  status.
+
+Columns:
+- Datastore.
+- Type.
+- Cluster.
+- Capacity (GB).
+- Used (GB).
+- Free (GB).
+- Percentage Used.
+- Warnings.
+- Notes.
+- Assigned VM Count.
+- Deletion Status.
+
+Formulas:
+
+Free (GB):
+- =Capacity (GB) - Used (GB)
+- Example: =D2-E2
+
+Percentage Used:
+- =IFERROR(Used / Capacity, 0)
+- Example: =IFERROR(E2/D2,0)
+
+Warnings:
+- Critical when Percentage Used >= 90%.
+- Warning when Percentage Used >= 80%.
+- Healthy otherwise.
+
+Assigned VM Count:
+- Counts VM Inventory Datastore values matching this datastore:
+  =COUNTIF('VM Inventory'!$J:$J,A<row>)
+
+Deletion Status:
+- Assigned to VM - must not delete when Assigned VM Count > 0.
+- Safe to delete otherwise.
+
+Dropdowns:
+
+Type:
+- VMFS.
+- NFS.
+- vSAN.
+- VVol.
+
+Cluster:
+- RefClusters.
+
+Conditional formatting:
+- Percentage Used >= 90%: red.
+- Percentage Used between 80% and 89.99%: amber.
+- Warning = Critical: red.
+- Warning = Warning: amber.
+- Warning = Healthy: green.
+- Deletion Status = Assigned to VM - must not delete: red.
+- Deletion Status = Safe to delete: green.
+
+Sample datastores:
+- DS-PRD-01.
+- DS-PRD-02.
+- DS-DEV-01.
+- DS-TST-01.
+
+========================================================================
+27. WORKBOOK SHEET: CAPACITY PLANNER
+========================================================================
+
+Sheet name:
+- Capacity Planner.
+
+Table name:
+- CapacityPlannerTable.
+
+Purpose:
+- Tracks cluster CPU, memory, and storage capacity and provides forecast
+  recommendations.
+
+Columns:
+- Cluster.
+- CPU Capacity (GHz).
+- CPU Used (GHz).
+- CPU Utilization.
+- Memory Capacity (GB).
+- Memory Used (GB).
+- Memory Utilization.
+- Storage Capacity (TB).
+- Storage Used (TB).
+- Storage Utilization.
+- Growth %.
+- 6 Month Forecast.
+- 12 Month Forecast.
+- Recommendations.
+
+Formulas:
+
+CPU Utilization:
+- =IFERROR(CPU Used / CPU Capacity, 0)
+
+Memory Utilization:
+- =IFERROR(Memory Used / Memory Capacity, 0)
+
+Storage Utilization:
+- =IFERROR(Storage Used / Storage Capacity, 0)
+
+6 Month Forecast:
+- =Storage Utilization * (1 + (Growth % / 2))
+
+12 Month Forecast:
+- =Storage Utilization * (1 + Growth %)
+
+Recommendations:
+- Add capacity immediately if 12 Month Forecast >= 90%.
+- Plan expansion within 90 days if 12 Month Forecast >= 80%.
+- Monitor closely if max current CPU, memory, or storage utilization >= 75%.
+- Capacity healthy otherwise.
+
+Dropdowns:
+- Cluster uses RefClusters.
+
+Charts:
+- CPU, Memory, and Storage Utilization bar chart.
+- Storage Growth Forecast line chart.
+
+Conditional formatting:
+- CPU Utilization, Memory Utilization, Storage Utilization, 6 Month Forecast,
+  and 12 Month Forecast:
+  - >= 90%: red.
+  - 80% to 89.99%: amber.
+- Recommendations:
+  - Add capacity immediately: red.
+  - Plan expansion within 90 days: amber.
+  - Capacity healthy: green.
+
+Sample capacity rows:
+- Cluster-Production.
+- Cluster-Development.
+- Cluster-Test.
+- Cluster-DR.
+
+========================================================================
+28. WORKBOOK SHEET: SNAPSHOT TRACKER
+========================================================================
+
+Sheet name:
+- Snapshot Tracker.
+
+Table name:
+- SnapshotTrackerTable.
+
+Purpose:
+- Tracks VM snapshots, age, warning level, and action required.
+
+Columns:
+- VM Name.
+- Snapshot Name.
+- Created Date.
+- Age (Days).
+- Created By.
+- Size (GB).
+- Description.
+- Warning.
+- Action Required.
+- Notes.
+
+Formulas:
+
+Age (Days):
+- =TODAY() - Created Date.
+
+Warning:
+- 90+ Days when age >= 90.
+- 30+ Days when age >= 30.
+- 14+ Days when age >= 14.
+- 7+ Days when age >= 7.
+- Healthy otherwise.
+
+Action Required:
+- Remove or approve retention when age >= 30.
+- Review owner exception when age >= 14.
+- Validate business need when age >= 7.
+- None otherwise.
+
+Dropdowns:
+- VM Name uses RefVMNames.
+- Created By uses RefOwners.
+
+Conditional formatting:
+- Age >= 90: dark red with white text.
+- Age 30 to 89: red with white text.
+- Age 14 to 29: orange/amber.
+- Age 7 to 13: light amber.
+- Warning values use matching severity colors.
+- Healthy uses green.
+
+Sample snapshots:
+- APP-PRD-001 / Pre-Patch-June.
+- SQL-DEV-002 / Schema-Test-Rollback.
+- WEB-TST-003 / Legacy-App-Testing.
+- FILE-LEG-004 / Migration-Hold.
+
+========================================================================
+29. WORKBOOK SHEET: BACKUP REGISTER
+========================================================================
+
+Sheet name:
+- Backup Register.
+
+Table name:
+- BackupRegisterTable.
+
+Purpose:
+- Tracks backup jobs, run success, restore tests, protected VM counts, and
+  backup compliance.
+
+Layout:
+- Dashboard section at top.
+- Table starts on row 8.
+- Freeze panes at A9.
+
+Dashboard title:
+- Backup Register Dashboard.
+
+Dashboard KPI cards:
+
+Total Jobs:
+- =COUNTA(A9:A1000)
+
+Successful:
+- =COUNTIF(F9:F1000,"Success")
+
+Failed:
+- =COUNTIF(F9:F1000,"Failed")
+
+Restore Tests:
+- =COUNTIF(J9:J1000,"Passed")
+
+Table columns:
+- Backup Job.
+- Schedule.
+- Repository.
+- Retention.
+- Last Backup.
+- Status.
+- Successful Runs.
+- Total Runs.
+- Success %.
+- Restore Test.
+- Restore Test Date.
+- Protected VMs.
+- Owner.
+- Notes.
+
+Success % formula:
+- =IFERROR(Successful Runs / Total Runs, 0)
+
+Dropdowns:
+
+Backup Job:
+- RefBackupJobs.
+
+Repository:
+- RefRepositories.
+
+Status:
+- Success.
+- Warning.
+- Failed.
+
+Restore Test:
+- Passed.
+- Pending.
+- Failed.
+
+Owner:
+- RefOwners.
+
+Conditional formatting:
+- Status = Success: green.
+- Status = Warning: amber.
+- Status = Failed: red.
+- Success % < 95%: red.
+- Success % >= 95%: green.
+- Restore Test = Passed: green.
+- Restore Test = Pending: amber.
+- Restore Test = Failed: red.
+
+Sample backup jobs:
+- Daily-Production.
+- Weekly-Development.
+- Critical-SQL-Logs.
+- Legacy-Test-VMs.
+
+========================================================================
+30. WORKBOOK SHEET: LICENSE
+========================================================================
+
+Sheet name:
+- License.
+
+Table name:
+- LicenseRegisterTable.
+
+Purpose:
+- Tracks Virtualization product license usage, available CPU count, expiration, and
+  support status.
+
+Columns:
+- Product.
+- Edition.
+- License Key.
+- Total CPUs.
+- Used CPUs.
+- Available CPUs.
+- Expiration Date.
+- Support Level.
+- Status.
+- Notes.
+
+Formulas:
+
+Available CPUs:
+- =Total CPUs - Used CPUs.
+
+Status:
+- Overallocated when Available CPUs < 0.
+- Perpetual when Expiration Date is blank.
+- Expired when Expiration Date is before today.
+- Active otherwise.
+
+Conditional formatting:
+- Active: green.
+- Perpetual: blue.
+- Expired: red.
+- Overallocated: red.
+
+Sample license rows:
+- Hypervisor Suite / Enterprise Plus.
+- Management Server / Standard.
+
+========================================================================
+31. WORKBOOK STYLE SYSTEM
+========================================================================
+
+Reusable style factories:
+- corporate_color_palette().
+- workbook_fonts().
+- workbook_borders().
+- workbook_alignments().
+- header_style().
+- section_title_style().
+- table_styles().
+- kpi_card_style().
+- workbook_theme().
+
+Named style categories:
+- Header style.
+- Section title style.
+- Table header.
+- Table body.
+- Table numeric.
+- KPI title.
+- KPI value.
+- KPI status.
+
+Design intent:
+- Professional enterprise reporting appearance.
+- Consistent colors across workbook sheets.
+- Easy extension for additional worksheet builders.
+
+========================================================================
+32. SEEDED DEMO DATA
+========================================================================
+
+Seeded clusters:
+- Cluster-Production.
+- Cluster-Development.
+- Cluster-Test.
+
+Seeded hosts:
+- host-prd-01.company.local.
+- host-dev-01.company.local.
+
+Seeded datastores:
+- DS-PRD-01.
+- DS-DEV-01.
+- DS-TST-01.
+
+Seeded VLANs:
+- VLAN-120.
+- VLAN-230.
+- VLAN-340.
+
+Seeded backup jobs:
+- Daily-Production.
+- Weekly-Development.
+- Critical-SQL-Logs.
+
+Seeded VMs:
+- APP-PRD-001.
+- SQL-DEV-002.
+
+Seeded users:
+- admin account uses VIRTUALIZATION_TOOLKIT_ADMIN_PASSWORD.
+- client account uses VIRTUALIZATION_TOOLKIT_CLIENT_PASSWORD.
+
+========================================================================
+33. IMPORTANT LIMITATIONS AND NOTES
+========================================================================
+
+Current implementation limitations:
+- The toolkit does not currently connect directly to Virtualization management server APIs.
+- Web console data and workbook sample data are separate systems.
+- Export workbook regenerates the static/sample workbook from code, not a
+  workbook built from current SQLite web-console records.
+- No edit/update form is implemented for existing resources.
+- Delete exists, create exists, list exists, but update existing resource
+  fields is not implemented.
+- No password reset page is implemented.
+- No audit log page is currently visible in the UI.
+- No pagination or search is implemented for large web tables.
+- Client-side permission hiding improves UX, but server-side route checks are
+  the real access control.
+- SQLite is suitable for local or simple deployment, but production multi-user
+  deployments may require stronger database planning.
+
+Strong future improvement ideas:
+- Add management server import using platform APIs such as Virtualization, Proxmox, Hyper-V, or KVM integrations.
+- Connect workbook export to live SQLite records.
+- Add edit forms for VMs, hosts, datastores, VLANs, backup jobs, clusters, and
+  users.
+- Add audit log page.
+- Add search, filtering, and pagination in the web console.
+- Add CSRF protection for form and API actions.
+- Add stronger password policy and password rotation.
+- Add role templates beyond admin/client.
+- Add backup/restore for SQLite database.
+- Add unit tests for service permissions and protected delete rules.
+- Add validation for IP address, CIDR, capacity ranges, and duplicate names
+  before API submission.
+
+========================================================================
+34. SHORT SUMMARY
+========================================================================
+
+The Virtualization Administration Toolkit is a combined reporting workbook generator
+and Flask web console for virtualization-style infrastructure administration. The Excel
+side produces a polished, formula-driven, multi-sheet workbook for inventory,
+capacity, snapshots, backups, licensing, and executive reporting. The web side
+provides a governed resource console with login, roles, permissions, dashboard
+metrics, live dropdowns, create forms, delete protection, and workbook export.
+
+It is best understood as an enterprise documentation and reporting starter
+kit: useful for creating structured virtualization inventory records, presenting
+executive summaries, managing reference data, and enforcing simple governance
+rules around assigned infrastructure resources.
+
+========================================================================
+35. END-TO-END WEB CONSOLE DATA FLOW
+========================================================================
+
+This section explains exactly what happens from login through dashboard
+refresh and resource creation.
+
+Startup flow:
+1. web.py imports create_app from webapp.
+2. create_app builds a Flask application.
+3. Flask config is loaded:
+   - SECRET_KEY from VIRTUALIZATION_TOOLKIT_SECRET_KEY or a process-local random value.
+   - DATABASE_PATH set to virtualization-toolkit/instance/toolkit.sqlite3.
+   - PROJECT_ROOT set to the virtualization-toolkit folder.
+4. init_database(app) runs.
+5. instance folder is created if missing.
+6. SQLite schema is created if missing.
+7. Permissions are seeded.
+8. Admin and client users are seeded.
+9. Demo infrastructure data is seeded.
+10. Request hooks are registered.
+11. Routes are registered.
+12. App serves on 127.0.0.1:5000 in local debug mode.
+
+Request hook flow:
+1. Before each request, load_logged_in_user runs.
+2. It checks session["user_id"].
+3. If no user_id exists, g.user remains None.
+4. If user_id exists, users table is queried.
+5. g.user becomes a plain dictionary.
+6. Explicit permissions are loaded from user_permissions.
+7. g.user["permissions"] becomes a sorted list.
+
+Login flow:
+1. Browser opens /login.
+2. User submits username and password.
+3. Flask queries users table by username.
+4. Werkzeug checks the password hash.
+5. If valid:
+   - session is cleared.
+   - session["user_id"] is set.
+   - browser redirects to /.
+6. If invalid:
+   - login page re-renders.
+   - flash error is shown.
+
+Dashboard page load flow:
+1. Browser requests /.
+2. login_required confirms g.user exists.
+3. get_dashboard_summary builds initial summary data.
+4. list_permissions fetches permission catalog.
+5. dashboard.html renders:
+   - body data-role.
+   - body data-superuser.
+   - body data-permissions.
+   - initial summary values.
+   - nav and views.
+6. app.js loads after HTML.
+7. DOMContentLoaded fires.
+8. refreshPermissionControls hides controls user cannot use.
+9. Navigation event handlers bind.
+10. Modal open/close handlers bind.
+11. refreshAll starts.
+
+refreshAll JavaScript flow:
+1. Calls refreshReferences.
+2. refreshReferences GETs /api/reference-options.
+3. If user has users.manage, GET /api/permissions.
+4. Loads all resources in parallel:
+   - clusters.
+   - hosts.
+   - datastores.
+   - vlans.
+   - backup_jobs.
+   - vms.
+   - users only if users.manage.
+5. Each resource result is stored in state.resources.
+6. Each table is rendered.
+7. refreshSummary GETs /api/summary.
+8. KPI values, charts, storage meter, warnings, and recent VM table update.
+
+Create resource flow:
+1. User clicks an Add button.
+2. Button must be visible, which requires resource.create or users.manage.
+3. openModal(type) refreshes reference options first.
+4. Modal fields are generated from modalDefinitions.
+5. User fills fields and clicks Save.
+6. submitResource converts FormData to a JSON object.
+7. JavaScript POSTs to the endpoint for that resource.
+8. Flask checks login.
+9. Flask checks required permission.
+10. Service function validates resource type.
+11. Resource-specific create function inserts row.
+12. Audit event is inserted.
+13. Database commits.
+14. Created row is returned.
+15. Modal closes.
+16. Toast confirms creation.
+17. refreshAll reloads references, resources, and dashboard summary.
+
+Delete resource flow:
+1. User clicks Delete on a row.
+2. Delete button appears only if user has resource.delete.
+3. JavaScript sends DELETE to /api/resources/<resource>/<id>.
+4. Flask checks login and permission.
+5. delete_resource validates the resource name.
+6. If the resource is vms:
+   - delete proceeds directly.
+7. If the resource is not vms:
+   - assignment blockers are checked.
+8. If blockers exist:
+   - service returns deleted=False.
+   - HTTP status is 409.
+   - message explains dependency count.
+9. If no blockers:
+   - row is deleted.
+   - audit event is written.
+   - database commits.
+10. JavaScript shows success or error toast.
+11. On success, refreshAll reloads the UI.
+
+Permission update flow:
+1. Admin opens Admin page.
+2. Users table renders one checkbox per permission per user.
+3. Admin users have disabled checkboxes because admins are superusers.
+4. Client users have editable checkboxes.
+5. Changing a checkbox calls updateUserPermissions(userId).
+6. JavaScript collects all checked permission codes for that user.
+7. JavaScript sends PUT /api/users/<id>/permissions.
+8. Flask checks users.manage.
+9. Service validates target user exists.
+10. Service validates every permission code exists in permissions table.
+11. Old explicit permissions for user are deleted.
+12. New explicit permissions are inserted.
+13. Audit event is written.
+14. Database commits.
+15. Toast confirms update.
+16. Users table reloads.
+
+Workbook export flow from web console:
+1. User clicks Export Excel.
+2. Button requires workbook.export.
+3. Browser requests /export/workbook.
+4. Flask checks login and permission.
+5. VirtualizationAdministrationToolkit(PROJECT_ROOT) is created.
+6. toolkit.run() regenerates the workbook.
+7. send_file downloads the workbook as an attachment.
+
+========================================================================
+36. JAVASCRIPT STATE, ENDPOINTS, AND UI BEHAVIOR
+========================================================================
+
+Global state object:
+
+state.role:
+- Comes from document.body.dataset.role.
+- Values are usually admin or client.
+
+state.isSuperuser:
+- True when body data-superuser is "true".
+- Admin users get true.
+
+state.permissions:
+- Parsed from body data-permissions.
+- Contains explicit permission codes for non-admin users.
+
+state.activeView:
+- Starts as overview.
+- Updated when sidebar buttons are clicked.
+
+state.referenceOptions:
+- Filled by GET /api/reference-options.
+- Used by reference dropdowns in modal forms.
+
+state.resources:
+- Holds loaded table data for clusters, hosts, datastores, VLANs, backup jobs,
+  VMs, and users.
+
+state.assignablePermissions:
+- Loaded from GET /api/permissions only when the current user can manage users.
+- Used to render permission columns in the users table.
+
+Endpoint map:
+- clusters -> /api/resources/clusters.
+- hosts -> /api/resources/hosts.
+- datastores -> /api/resources/datastores.
+- vlans -> /api/resources/vlans.
+- backup_jobs -> /api/resources/backup_jobs.
+- vms -> /api/resources/vms.
+- users -> /api/users.
+
+Navigation behavior:
+- Sidebar buttons have data-view attributes.
+- Clicking a nav item:
+  - Updates state.activeView.
+  - Removes active class from all nav buttons.
+  - Removes active class from all views.
+  - Adds active class to clicked nav button.
+  - Adds active class to matching view section.
+
+Table rendering behavior:
+- renderTable(resource) finds table by id:
+  - table-vms.
+  - table-hosts.
+  - table-datastores.
+  - table-vlans.
+  - table-backup_jobs.
+  - table-clusters.
+  - table-users.
+- Users table has custom rendering because it includes permission checkboxes.
+- Other tables use tableColumns definitions.
+- Delete action column appears only when hasPermission("resource.delete") is
+  true.
+
+Value formatting:
+- health, status, power_state, criticality, and snapshot values are rendered
+  as colored status pills.
+- used_percent automatically appends percent sign.
+- All values are escaped before insertion into HTML.
+
+HTML escaping:
+- Replaces:
+  - & with &amp;.
+  - < with &lt;.
+  - > with &gt;.
+  - " with &quot;.
+  - ' with &#039;.
+- This protects dynamic text inserted into HTML.
+
+Dashboard chart rendering:
+- renderDistribution renders label, count, percent, and a small bar.
+- renderStorageRows renders datastore capacity usage bars.
+- renderWarnings renders warning rows with severity class.
+- renderRecentVms renders recent VM table rows.
+
+Reference field rendering:
+- Reference fields render as select dropdowns.
+- First option is "Select <label>" with empty value.
+- Choices come from state.referenceOptions[source].
+- Choice label is displayed; id is submitted.
+
+Host-to-cluster sync:
+- In the Add VM modal, selecting host_id triggers syncClusterFromHost.
+- JavaScript finds the selected host in referenceOptions.hosts.
+- It reads the host.cluster string.
+- It finds a matching cluster label in referenceOptions.clusters.
+- It sets cluster_id to that matching cluster id.
+
+Permission control refresh:
+- refreshPermissionControls finds every element with data-required-permission.
+- If current user lacks that permission, permission-hidden class is applied.
+- permission-hidden sets display: none !important.
+
+========================================================================
+37. EXACT WEB TABLE FIELD SOURCES
+========================================================================
+
+VM table:
+- name comes from vms.name.
+- environment comes from vms.environment.
+- operating_system comes from vms.operating_system.
+- hostname comes from hosts.hostname.
+- cluster_name comes from clusters.name.
+- datastore_name comes from datastores.name.
+- vlan_name comes from vlans.name.
+- power_state comes from vms.power_state.
+- backup_job_name comes from backup_jobs.name.
+- snapshot comes from vms.snapshot.
+- criticality comes from vms.criticality.
+
+Hosts table:
+- hostname comes from hosts.hostname.
+- cluster_name comes from clusters.name.
+- version comes from hosts.version.
+- management_ip comes from hosts.management_ip.
+- license comes from hosts.license.
+- health comes from hosts.health.
+- assigned_vm_count comes from COUNT(vms.id) grouped by host.
+
+Datastores table:
+- name comes from datastores.name.
+- datastore_type comes from datastores.datastore_type.
+- cluster_name comes from clusters.name.
+- capacity_gb comes from datastores.capacity_gb.
+- used_gb comes from datastores.used_gb.
+- used_percent is calculated in SQL.
+- assigned_vm_count comes from COUNT(vms.id) grouped by datastore.
+
+VLAN table:
+- name comes from vlans.name.
+- cidr comes from vlans.cidr.
+- security_zone comes from vlans.security_zone.
+- assigned_vm_count comes from COUNT(vms.id) grouped by VLAN.
+
+Backup jobs table:
+- name comes from backup_jobs.name.
+- schedule comes from backup_jobs.schedule.
+- repository comes from backup_jobs.repository.
+- retention comes from backup_jobs.retention.
+- status comes from backup_jobs.status.
+- assigned_vm_count comes from COUNT(vms.id) grouped by backup job.
+
+Clusters table:
+- name comes from clusters.name.
+- environment comes from clusters.environment.
+- status comes from clusters.status.
+- notes comes from clusters.notes.
+
+Users table:
+- username comes from users.username.
+- display_name comes from users.display_name.
+- role comes from users.role.
+- permissions are collected from user_permissions.
+
+========================================================================
+38. EXACT CREATE PAYLOAD EXAMPLES
+========================================================================
+
+Create cluster:
+
+POST /api/resources/clusters
+Content-Type: application/json
+
+{
+  "name": "Cluster-DR",
+  "environment": "DR",
+  "status": "Active",
+  "notes": "Disaster recovery compute"
+}
+
+Required field:
+- name.
+
+Create host:
+
+POST /api/resources/hosts
+Content-Type: application/json
+
+{
+  "hostname": "host-dr-01.company.local",
+  "cluster_id": "1",
+  "version": "Generic Hypervisor 2026",
+  "build": "22380479",
+  "cpu": "2 x Intel Xeon, 32 cores",
+  "memory": "512 GB",
+  "nics": "4",
+  "management_ip": "10.40.1.21",
+  "license": "Enterprise Plus",
+  "health": "Healthy",
+  "notes": "DR host"
+}
+
+Required fields:
+- hostname.
+- cluster_id.
+
+Create datastore:
+
+POST /api/resources/datastores
+Content-Type: application/json
+
+{
+  "name": "DS-DR-01",
+  "datastore_type": "VMFS",
+  "cluster_id": "1",
+  "capacity_gb": "12000",
+  "used_gb": "3000",
+  "notes": "DR datastore"
+}
+
+Required fields:
+- name.
+- cluster_id.
+
+Create VLAN:
+
+POST /api/resources/vlans
+Content-Type: application/json
+
+{
+  "name": "VLAN-440",
+  "cidr": "10.40.40.0/24",
+  "security_zone": "DMZ",
+  "notes": "DR DMZ network"
+}
+
+Required field:
+- name.
+
+Create backup job:
+
+POST /api/resources/backup_jobs
+Content-Type: application/json
+
+{
+  "name": "Daily-DR",
+  "schedule": "Daily 23:00",
+  "repository": "Repo-DR",
+  "retention": "30 daily",
+  "status": "Success"
+}
+
+Required field:
+- name.
+
+Create VM:
+
+POST /api/resources/vms
+Content-Type: application/json
+
+{
+  "name": "APP-DR-001",
+  "description": "DR application server",
+  "environment": "DR",
+  "business_unit": "Infrastructure",
+  "owner": "Infrastructure Operations",
+  "application": "Platform Services",
+  "operating_system": "Windows Server 2022",
+  "host_id": "1",
+  "cluster_id": "1",
+  "datastore_id": "1",
+  "folder": "/DR/Applications",
+  "resource_pool": "RP-DR",
+  "vcpu": "4",
+  "ram_gb": "16",
+  "disk_gb": "250",
+  "ip_address": "10.40.40.15",
+  "vlan_id": "1",
+  "backup_enabled": "true",
+  "backup_job_id": "1",
+  "snapshot": "No",
+  "guest_tools": "Current",
+  "power_state": "Powered On",
+  "criticality": "High",
+  "notes": "Created from web console"
+}
+
+Required fields:
+- name.
+- host_id.
+- cluster_id.
+- datastore_id.
+- vlan_id.
+
+Create user:
+
+POST /api/users
+Content-Type: application/json
+
+{
+  "username": "auditor",
+  "display_name": "Read Only Auditor",
+  "role": "client",
+  "password": "temporary-password"
+}
+
+Required fields:
+- username.
+- password.
+
+Role rules:
+- role must be admin or client.
+- if role is omitted, client is used.
+
+Update user permissions:
+
+PUT /api/users/3/permissions
+Content-Type: application/json
+
+{
+  "permissions": [
+    "workbook.export",
+    "resource.create"
+  ]
+}
+
+Rules:
+- Every submitted permission code must exist in permissions table.
+- The submitted list replaces all previous explicit permissions for the user.
+
+========================================================================
+39. ERROR RESPONSES AND WHAT THEY MEAN
+========================================================================
+
+Invalid login:
+- Page flash message:
+  Invalid username or password.
+- Meaning:
+  Username was not found or password hash check failed.
+
+Not logged in:
+- Browser is redirected to /login for HTML pages.
+- API routes are protected by login_required and will redirect if accessed as
+  browser routes without session.
+
+Missing permission:
+- HTTP 403.
+- Body:
+  {"message": "You do not have permission."}
+- Meaning:
+  User is not admin and does not have the required explicit permission.
+
+Unsupported resource:
+- Usually HTTP 404 on list route or handled as error.
+- Message:
+  Unsupported resource: <resource>
+- Meaning:
+  Resource name is not in RESOURCE_TABLES.
+
+Missing required field:
+- HTTP 400.
+- Message:
+  Missing required field: '<field>'
+- Meaning:
+  Required JSON key was missing from payload.
+
+Database rule failed:
+- HTTP 409.
+- Common reasons:
+  - Duplicate unique name.
+  - Foreign key issue.
+  - Constraint violation.
+- Example:
+  Database rule failed: UNIQUE constraint failed: vms.name
+
+Invalid role:
+- HTTP 400.
+- Message:
+  Role must be admin or client.
+
+Invalid permissions:
+- HTTP 400.
+- Message:
+  Invalid permission(s): <codes>
+- Meaning:
+  Request tried to grant permission codes not present in permissions table.
+
+Protected delete:
+- HTTP 409.
+- Message:
+  <resource> is assigned to <dependency count> and must not be deleted.
+- Meaning:
+  Reassign or delete dependent resources first.
+
+Resource not found:
+- HTTP 404.
+- Message:
+  Resource not found.
+- Meaning:
+  Delete target id does not exist.
+
+========================================================================
+40. WORKBOOK FORMULA DETAILS BY SHEET
+========================================================================
+
+Executive Dashboard formula design:
+- Dashboard formulas use full-column references against VM Inventory.
+- This means the dashboard updates when users add rows anywhere in those
+  columns.
+- Excel recalculation is forced on open by workbook.calculation settings.
+
+VM Inventory formula design:
+- VM Inventory mostly stores direct values.
+- Its governance comes from:
+  - dropdowns.
+  - reference dropdowns.
+  - conditional formatting.
+  - date/numeric formatting.
+- It does not create formulas in core VM records.
+
+Host Inventory formula design:
+- Assigned VM Count is based on matching hostnames in VM Inventory.
+- Deletion Status is based on Assigned VM Count.
+- This mirrors the web app's protected delete idea inside Excel.
+
+Datastore formula design:
+- Free capacity and utilization are row-local formulas.
+- Warning status derives from Percentage Used.
+- Assigned VM Count checks VM Inventory Datastore column.
+- Deletion Status warns when datastore is still assigned to a VM.
+
+Capacity Planner formula design:
+- Utilization formulas divide used by capacity.
+- Forecast formulas apply growth percentage.
+- Recommendation formula compresses multiple risk levels into one text output.
+- Chart helper tables are placed to the right of the main table.
+
+Snapshot Tracker formula design:
+- Age uses TODAY, so it changes every day when Excel recalculates.
+- Warning and Action Required are derived from age thresholds.
+- Older snapshots automatically escalate from Healthy to 7+ Days, 14+ Days,
+  30+ Days, and 90+ Days.
+
+Backup Register formula design:
+- Success % divides Successful Runs by Total Runs.
+- Top KPI cards count job and status fields.
+- Conditional formatting makes failed backups, weak success percentages, and
+  failed restore tests visible.
+
+License formula design:
+- Available CPUs subtracts Used CPUs from Total CPUs.
+- Status handles over-allocation first, then perpetual blank expiration, then
+  expired, then active.
+
+Reference Data formula design:
+- Assigned Count formulas count usage in VM Inventory or Backup Register.
+- Deletion Status converts counts into governance text.
+- Defined names power validation dropdowns throughout the workbook.
+
+========================================================================
+41. WORKBOOK DROPDOWN GOVERNANCE MODEL
+========================================================================
+
+The workbook uses two dropdown types:
+
+1. Fixed dropdowns:
+- Options are hard-coded directly in data validation formulas.
+- Good for stable categories like Power State or Criticality.
+
+2. Reference dropdowns:
+- Options come from workbook defined names such as RefHosts or RefClusters.
+- Good for values that should be governed centrally.
+
+Fixed dropdown examples:
+- Power State.
+- Criticality.
+- Backup.
+- Snapshot.
+- Guest Tools.
+- Health.
+- Backup Status.
+- Restore Test.
+
+Reference dropdown examples:
+- Host.
+- Cluster.
+- Datastore.
+- VLAN.
+- Backup Job.
+- Repository.
+- Owner.
+- Business Unit.
+- Security Zone.
+- Support Group.
+
+Why this matters:
+- Users get controlled input lists.
+- Reports become more consistent.
+- Dashboard formulas count predictable values.
+- Reference Data can warn when a value is still assigned.
+
+========================================================================
+42. DEPLOYMENT DETAILS
+========================================================================
+
+Local development:
+- Uses Flask debug server.
+- Command:
+  python web.py
+- Bind address:
+  127.0.0.1
+- Port:
+  5000
+
+Container deployment:
+- Dockerfile uses python:3.12-slim.
+- Working directory inside container:
+  /app
+- requirements.txt installed with pip.
+- Source code copied into image.
+- Port 5000 exposed.
+- Gunicorn command:
+  gunicorn --bind 0.0.0.0:5000 web:app
+
+Persistent data in Docker:
+- SQLite database lives under:
+  /app/instance/toolkit.sqlite3
+- Mount /app/instance to preserve users and records across container rebuilds.
+
+Important production settings:
+- Set VIRTUALIZATION_TOOLKIT_SECRET_KEY.
+- Set VIRTUALIZATION_TOOLKIT_ADMIN_PASSWORD before first database seed.
+- Set VIRTUALIZATION_TOOLKIT_CLIENT_PASSWORD before first database seed.
+- Use HTTPS behind a reverse proxy.
+- Use strong passwords.
+- Consider replacing SQLite with a production database if concurrent writes or
+  multi-instance deployment is needed.
+
+========================================================================
+43. TROUBLESHOOTING
+========================================================================
+
+Problem: Cannot log in with the admin account.
+Possible causes:
+- Database was already created with a different environment password.
+- Password seed only inserts users if they do not already exist.
+- You may need to update the database user password or delete/recreate the
+  local instance database if this is only a demo environment.
+
+Problem: Add buttons are missing.
+Cause:
+- Current user lacks resource.create or users.manage.
+Fix:
+- Log in as admin or grant the user the needed permission.
+
+Problem: Export Excel button is missing.
+Cause:
+- Current user lacks workbook.export.
+Fix:
+- Log in as admin or grant workbook.export.
+
+Problem: Delete buttons are missing.
+Cause:
+- Current user lacks resource.delete.
+Fix:
+- Log in as admin or grant resource.delete.
+
+Problem: Delete button gives an error even though delete permission exists.
+Cause:
+- Resource is assigned to another resource.
+Fix:
+- Reassign or remove dependent VMs, hosts, or datastores before deleting.
+
+Problem: A new host does not appear in Add VM dropdown.
+Possible causes:
+- Browser did not refresh references.
+- Resource creation failed.
+Expected behavior:
+- Successful create calls refreshAll, so it should appear immediately.
+Fix:
+- Check toast messages.
+- Refresh page.
+- Confirm host exists in Hosts table.
+
+Problem: Workbook dashboard numbers do not update in Excel.
+Cause:
+- Excel may not have recalculated yet.
+Fix:
+- Open workbook in Excel and recalculate formulas.
+- The workbook is configured to force full calculation on load.
+
+Problem: Web dashboard export does not include new web-console VMs.
+Cause:
+- Current export regenerates workbook from static workbook modules and sample
+  data, not from SQLite resources.
+Fix:
+- This requires a future enhancement connecting workbook builders to database
+  records.
+
+Problem: Duplicate name error.
+Cause:
+- Many tables have unique name fields.
+Fix:
+- Use a new unique name or manually update/delete existing record.
+
+Problem: Docker container loses data after rebuild.
+Cause:
+- instance folder was not mounted to persistent storage.
+Fix:
+- Mount /app/instance as a volume.
+
+========================================================================
+44. PRACTICAL ADMIN WORKFLOWS
+========================================================================
+
+Workflow: Create a new VM correctly.
+1. Make sure the target cluster exists.
+2. Make sure the target host exists and belongs to the cluster.
+3. Make sure the target datastore exists.
+4. Make sure the target VLAN exists.
+5. Make sure the target backup job exists, if backup is enabled.
+6. Open VM Inventory.
+7. Click Add VM.
+8. Enter VM Name and metadata.
+9. Select Host.
+10. Confirm Cluster auto-selects correctly.
+11. Select Datastore.
+12. Select VLAN.
+13. Choose Backup Enabled and Backup Job.
+14. Set Snapshot, Guest Tools, Power State, and Criticality.
+15. Save.
+16. Confirm VM appears in table.
+17. Check Dashboard KPIs and warnings.
+
+Workflow: Safely delete a datastore.
+1. Open Datastores.
+2. Check Assigned VMs count.
+3. If count is 0, delete is allowed.
+4. If count is above 0, identify assigned VMs in VM Inventory.
+5. Delete or reassign those VMs first.
+6. Try deletion again.
+
+Workflow: Give a client export-only access.
+1. Log in as admin.
+2. Open Admin.
+3. Create user with role client.
+4. In Users & Permissions, check Export workbook.
+5. Leave Create resources, Delete resources, and Manage users unchecked.
+6. User can now view data and export workbook but cannot change resources.
+
+Workflow: Give an operator create access but prevent deletes.
+1. Log in as admin.
+2. Open Admin.
+3. Create or locate operator user.
+4. Check Create resources.
+5. Leave Delete resources unchecked.
+6. Operator can add resources but cannot delete them.
+
+Workflow: Full delegated administrator.
+1. Log in as admin.
+2. Create user with role admin.
+3. Admin role automatically acts as superuser.
+4. Permission checkboxes will show Superuser and cannot be changed.
+
+========================================================================
+45. SOURCE FILE RESPONSIBILITIES
+========================================================================
+
+main.py:
+- Defines OUTPUT_FILE_NAME.
+- Defines VirtualizationAdministrationToolkit.
+- Coordinates workbook creation.
+- Configures workbook calculation.
+- Removes default sheet.
+- Builds every worksheet.
+- Saves output file.
+- Verifies output file exists.
+
+web.py:
+- Imports create_app.
+- Creates app object for Flask/Gunicorn.
+- Runs debug server when executed directly.
+
+webapp/app.py:
+- Creates Flask app.
+- Configures secret key, database path, and project root.
+- Initializes database.
+- Registers request hooks.
+- Registers HTML, API, and export routes.
+- Defines login_required decorator.
+- Defines permission_required decorator.
+
+webapp/database.py:
+- Defines SQLite schema.
+- Defines seed data.
+- Opens request-scoped database connections.
+- Creates schema and seed records.
+- Seeds permissions.
+- Seeds demo users.
+- Converts SQLite rows to dictionaries.
+
+webapp/services.py:
+- Contains business logic.
+- Defines supported resource table mapping.
+- Defines protected delete dependency guards.
+- Builds dashboard summary.
+- Lists reference options.
+- Checks permissions.
+- Lists and creates users.
+- Updates user permissions.
+- Lists, creates, and deletes resources.
+- Writes audit events.
+
+webapp/templates/login.html:
+- Login form template.
+- Displays demo credentials.
+- Displays flash errors.
+
+webapp/templates/dashboard.html:
+- Main single-page console template.
+- Contains sidebar, dashboard view, resource views, admin view, modal, and
+  toast container.
+
+webapp/static/js/app.js:
+- Client-side state.
+- Navigation.
+- Modal rendering.
+- Resource loading.
+- Table rendering.
+- Dashboard rendering.
+- Create/delete actions.
+- Permission checkbox actions.
+- Toast messages.
+- HTML escaping.
+
+webapp/static/css/app.css:
+- Visual design for login screen, sidebar, topbar, KPI cards, panels, tables,
+  modals, status pills, toast notifications, and responsive layout.
+
+src/styles.py:
+- Reusable workbook theme and styles.
+
+src/cover.py:
+- Builds cover and navigation page.
+
+src/instructions.py:
+- Builds instructions worksheet.
+
+src/reference_data.py:
+- Builds governed reference lists and workbook defined names.
+
+src/dashboard.py:
+- Builds executive dashboard formulas, KPI cards, summary tables, and charts.
+
+src/vm_inventory.py:
+- Builds 114-column VM inventory sheet with dropdowns and conditional
+  formatting.
+
+src/host_inventory.py:
+- Builds host inventory with health status and deletion status.
+
+src/datastore.py:
+- Builds datastore capacity tracking and deletion status.
+
+src/capacity.py:
+- Builds capacity planning formulas and charts.
+
+src/snapshot.py:
+- Builds snapshot age tracking and action warnings.
+
+src/backup.py:
+- Builds backup register and backup dashboard.
+
+src/license.py:
+- Builds license register and license status formulas.
+
+========================================================================
+46. HOW TO CUSTOMIZE THE TOOLKIT
+========================================================================
+
+Customize workbook branding:
+- Edit src/cover.py CoverMetadata defaults.
+- Edit src/styles.py corporate_color_palette.
+- Replace placeholder author and company values.
+- Update footer copyright text.
+
+Customize workbook sample data:
+- Edit _sample_records methods in:
+  - src/vm_inventory.py.
+  - src/host_inventory.py.
+  - src/datastore.py.
+  - src/capacity.py.
+  - src/snapshot.py.
+  - src/backup.py.
+  - src/license.py.
+
+Customize dropdown values:
+- For workbook fixed dropdowns, edit constants such as:
+  - VM_INVENTORY_DROPDOWNS.
+  - validations dictionaries in Host, Datastore, Snapshot, Backup.
+- For workbook reference dropdowns, edit REFERENCE_LISTS in
+  src/reference_data.py.
+- For web modal dropdowns, edit modalDefinitions in webapp/static/js/app.js.
+
+Customize dashboard warnings:
+- Edit _dashboard_warnings in webapp/services.py.
+- Current warning types:
+  - Datastores above 80%.
+  - VMs with snapshots.
+  - Outdated Guest Tools.
+  - Backups disabled.
+  - Critical VMs.
+
+Customize permissions:
+- Edit _seed_permissions in webapp/database.py.
+- Add route decorators and UI data-required-permission markers as needed.
+
+Customize seeded users:
+- Edit _seed_users in webapp/database.py.
+- Prefer environment variables for passwords.
+
+Customize seeded demo inventory:
+- Edit SEED_SQL in webapp/database.py.
+
+Customize web styling:
+- Edit CSS variables in webapp/static/css/app.css:
+  - --navy.
+  - --blue.
+  - --surface.
+  - --background.
+  - --line.
+  - --text.
+  - --muted.
+  - --green.
+  - --amber.
+  - --red.
+  - --purple.
+  - --shadow.
+
+========================================================================
+47. VALIDATION AND TESTING CHECKLIST
+========================================================================
+
+Basic local check:
+1. Install requirements.
+2. Run python main.py.
+3. Confirm output workbook exists.
+4. Run python web.py.
+5. Open http://127.0.0.1:5000.
+6. Log in as admin.
+7. Confirm dashboard loads.
+8. Confirm all nav pages switch correctly.
+9. Confirm Add VM modal opens.
+10. Confirm Export Excel downloads workbook.
+
+Permission check:
+1. Log in as client.
+2. Confirm Add buttons are hidden.
+3. Confirm Delete buttons are hidden.
+4. Confirm Export Excel is hidden unless permission is granted.
+5. Log in as admin.
+6. Grant client workbook.export.
+7. Log in as client.
+8. Confirm Export Excel appears.
+
+Protected delete check:
+1. Log in as admin.
+2. Try deleting a datastore assigned to a VM.
+3. Confirm error toast appears.
+4. Delete or reassign dependent VM.
+5. Try deleting datastore again.
+6. Confirm deletion succeeds only after dependencies are removed.
+
+Dashboard check:
+1. Add a Powered Off VM.
+2. Confirm Powered Off KPI increases.
+3. Add a VM with snapshot Yes.
+4. Confirm Snapshots KPI and warnings update.
+5. Add a VM with Guest Tools Outdated.
+6. Confirm Outdated Guest Tools warning appears.
+
+Workbook check:
+1. Run python main.py.
+2. Open workbook.
+3. Confirm sheets exist in expected order.
+4. Confirm Cover navigation links work.
+5. Confirm VM Inventory dropdowns appear.
+6. Confirm Dashboard charts exist.
+7. Confirm formulas calculate.
+8. Confirm conditional formatting appears for risk values.
+
+========================================================================
+48. FINAL DEEP SUMMARY
+========================================================================
+
+The project is best described as a commercial-quality virtualization operations
+documentation starter kit. It contains both a generated Excel reporting
+workbook and a browser-based resource console. The workbook side focuses on
+offline reporting, formulas, charts, dropdown governance, and executive
+visibility. The web side focuses on live resource entry, role-based access,
+dashboard metrics, dependency protection, and exporting the workbook.
+
+Every visible web page is represented in dashboard.html and controlled by
+app.js. Every workbook sheet is represented by one Python builder module in
+src. The service layer is the business-policy core of the web console: it
+calculates metrics, validates permissions, creates resources, blocks unsafe
+deletes, and writes audit entries.
+
+The strongest current feature is the combination of governance ideas across
+both interfaces: live web dropdowns from source tables, protected deletion in
+the web app, reference lists in Excel, and deletion status warnings in the
+workbook. The main limitation is that the exported workbook currently comes
+from sample workbook builders, not from live SQLite records. Connecting those
+two would make the toolkit a much more complete operational reporting system.

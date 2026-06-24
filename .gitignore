@@ -1,0 +1,27 @@
+# Python runtime artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments and local config
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Runtime data and generated reports
+instance/*.sqlite3
+instance/*.sqlite3-*
+output/*.xlsx
+output/*.xlsm
+output/*.pdf
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

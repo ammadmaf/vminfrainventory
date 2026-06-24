@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 116" role="img" aria-labelledby="title desc">
+  <title id="title">Virtualization Administration Toolkit</title>
+  <desc id="desc">VT segmented hexagon logo with stacked wordmark.</desc>
+  <defs>
+    <linearGradient id="lockTopLeft" x1="18" y1="37" x2="57" y2="14" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B8D60"/>
+      <stop offset="1" stop-color="#1ED08D"/>
+    </linearGradient>
+    <linearGradient id="lockTopRight" x1="61" y1="14" x2="100" y2="37" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#43E0A7"/>
+      <stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+    <linearGradient id="lockRight" x1="102" y1="39" x2="92" y2="79" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#50E4AF"/>
+      <stop offset="1" stop-color="#1BA876"/>
+    </linearGradient>
+    <linearGradient id="lockBottomRight" x1="100" y1="81" x2="61" y2="104" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#34D399"/>
+      <stop offset="1" stop-color="#11B87A"/>
+    </linearGradient>
+    <linearGradient id="lockBottomLeft" x1="57" y1="104" x2="18" y2="81" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0A8058"/>
+      <stop offset="1" stop-color="#064E3B"/>
+    </linearGradient>
+    <linearGradient id="lockLeft" x1="16" y1="39" x2="26" y2="79" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#096C4D"/>
+      <stop offset="1" stop-color="#0B8D60"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <polygon points="18 37 57 14 57 27 27 45" fill="url(#lockTopLeft)"/>
+    <polygon points="61 14 100 37 91 45 61 27" fill="url(#lockTopRight)"/>
+    <polygon points="102 39 102 79 92 73 92 46" fill="url(#lockRight)"/>
+    <polygon points="100 81 61 104 61 91 91 73" fill="url(#lockBottomRight)"/>
+    <polygon points="57 104 18 81 27 73 57 91" fill="url(#lockBottomLeft)"/>
+    <polygon points="16 39 26 46 26 73 16 79" fill="url(#lockLeft)"/>
+    <polygon points="59 29 89 47 89 71 59 89 29 71 29 47" fill="#0B111B"/>
+    <text x="59" y="67" text-anchor="middle" font-family="Manrope, Inter, Arial, sans-serif" font-size="34" font-weight="900" letter-spacing="-3" fill="#FFFFFF">VT</text>
+  </g>
+  <g font-family="Manrope, Inter, Arial, sans-serif" font-weight="800" font-size="27" letter-spacing="-0.5">
+    <text x="126" y="40" fill="#FFFFFF">VIRTUALIZATION</text>
+    <text x="126" y="70" fill="#34D399">ADMINISTRATION</text>
+    <text x="126" y="100" fill="#FFFFFF">TOOLKIT</text>
+  </g>
+</svg>

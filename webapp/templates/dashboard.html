@@ -1,0 +1,249 @@
+{% macro icon(name, extra='') -%}
+<svg class="icon {{ extra }}" aria-hidden="true"><use href="{{ url_for('static', filename='assets/icons.svg') }}#icon-{{ name }}"></use></svg>
+{%- endmacro %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ branding.company_name }}</title>
+    <link rel="icon" href="{{ url_for('static', filename='assets/vt-logo-mark.svg', v='20260624-logo-reference-v5') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v='20260624-table-controls-v1') }}">
+    <script defer src="{{ url_for('static', filename='js/app.js', v='20260624-table-controls-v1') }}"></script>
+</head>
+<body
+    data-role="{{ user.role }}"
+    data-superuser="{{ 'true' if user.role == 'admin' else 'false' }}"
+    data-permissions='{{ user.permissions|tojson }}'
+    data-icon-path="{{ url_for('static', filename='assets/icons.svg') }}"
+    data-asset-path="{{ url_for('static', filename='assets/') }}"
+    data-csrf-token="{{ csrf_token }}"
+    data-branding='{{ branding|tojson }}'
+>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img class="brand-lockup" data-brand-logo data-default-src="{{ url_for('static', filename='assets/vt-brand-lockup.svg', v='20260624-brand-lockup-v1') }}" src="{{ branding.logo_url or url_for('static', filename='assets/vt-brand-lockup.svg', v='20260624-brand-lockup-v1') }}" alt="{{ branding.company_name }}">
+            <div class="brand-text">
+                <strong data-brand-company>{{ branding.company_name }}</strong>
+                <span data-brand-tagline>{{ branding.tagline }}</span>
+            </div>
+        </div>
+        <nav aria-label="Primary navigation">
+            <button class="nav-item active" data-view="overview">{{ icon('dashboard') }}<span>Overview</span></button>
+            <button class="nav-item" data-view="environments">{{ icon('environments') }}<span>Environments</span></button>
+            <button class="nav-item" data-view="clusters">{{ icon('clusters') }}<span>Clusters</span></button>
+            <button class="nav-item" data-view="vms">{{ icon('vm') }}<span>VM Inventory</span></button>
+            <button class="nav-item" data-view="hosts">{{ icon('host') }}<span>Hosts</span></button>
+            <button class="nav-item" data-view="datastores">{{ icon('datastore') }}<span>Datastores</span></button>
+            <button class="nav-item" data-view="vlans">{{ icon('vlan') }}<span>VLANs</span></button>
+            <button class="nav-item" data-view="backup_jobs">{{ icon('backup') }}<span>Backups</span></button>
+            <button class="nav-item" data-view="trash" data-required-permission="resource.delete">{{ icon('trash') }}<span>Trash</span></button>
+            <button class="nav-item" data-view="admin">{{ icon('admin') }}<span>Administration</span></button>
+        </nav>
+        <div class="sidebar-actions">
+            <a class="sidebar-export" href="{{ url_for('export_workbook') }}" data-required-permission="workbook.export">
+                <img class="export-workbook-icon" src="{{ url_for('static', filename='assets/export-workbook-icon-160.png') }}" alt="">
+                <span><small>Export workbook</small>Excel Report</span>
+                <b>&rsaquo;</b>
+            </a>
+        </div>
+        <div class="sidebar-footer">
+            <div class="avatar">{{ user.display_name[:1]|upper }}</div>
+            <div>
+                <span>{{ user.display_name }}</span>
+                <strong>{{ user.role|upper }}</strong>
+            </div>
+        </div>
+        <a class="sidebar-logout" href="{{ url_for('logout') }}">{{ icon('logout') }}<span>Logout</span></a>
+    </aside>
+
+    <main class="app-shell">
+        <header class="topbar">
+            <button class="icon-button menu-button" type="button" data-toggle-menu aria-label="Toggle menu" aria-expanded="true">{{ icon('more') }}</button>
+            <label class="global-search">
+                {{ icon('search') }}
+                <input data-global-search placeholder="Search VMs, hosts, datastores..." autocomplete="off">
+                <kbd>Ctrl K</kbd>
+            </label>
+            <div class="topbar-actions">
+                <button class="icon-button" type="button" data-notifications-toggle aria-label="Notifications" aria-expanded="false" aria-controls="notification-panel">{{ icon('bell') }}<span class="notify-dot">4</span></button>
+                <button class="ghost-button layout-edit-button" type="button" data-open-layout-editor>{{ icon('dashboard') }}Edit Layout</button>
+                <button class="primary-button" type="button" data-modal="vm" data-required-permission="resource.create">{{ icon('add') }}Add VM</button>
+                <button class="icon-button" type="button" data-refresh-dashboard aria-label="Refresh dashboard">{{ icon('refresh') }}</button>
+                <span class="system-status"><i></i>All Systems Operational</span>
+                <div class="notification-panel" id="notification-panel" role="menu" hidden>
+                    <div class="notification-panel-header">
+                        <strong>Operational Alerts</strong>
+                        <span>4 active</span>
+                    </div>
+                    <button type="button" role="menuitem" data-notification-view="datastores" data-notification-filter="80." data-notification-label="Datastores above 80%">{{ icon('datastore') }}<span>Datastores above 80%<small>Capacity review</small></span><b>1</b></button>
+                    <button type="button" role="menuitem" data-notification-view="vms" data-notification-filter="Yes" data-notification-label="VMs with snapshots">{{ icon('camera') }}<span>VMs with snapshots<small>Snapshot watch</small></span><b>1</b></button>
+                    <button type="button" role="menuitem" data-notification-view="vms" data-notification-filter="false" data-notification-label="Backups disabled">{{ icon('backup') }}<span>Backups disabled<small>Protection gap</small></span><b>4</b></button>
+                    <button type="button" role="menuitem" data-notification-view="vms" data-notification-filter="Critical" data-notification-label="Critical VMs">{{ icon('alert') }}<span>Critical VMs<small>Priority tier</small></span><b>3</b></button>
+                </div>
+            </div>
+        </header>
+
+        <section class="vendor-strip" aria-label="Technology quick actions">
+            <button class="vendor hypervisor" type="button" data-tech-view="hosts">{{ icon('hypervisor') }}<span>Hypervisors<small>Manage Hosts</small></span></button>
+            <button class="vendor clusters" type="button" data-tech-view="clusters">{{ icon('clusters') }}<span>Clusters<small>Cluster Groups</small></span></button>
+            <button class="vendor linux" type="button" data-tech-view="vms" data-tech-filter="Linux|Ubuntu|Red Hat|Photon"><img class="platform-img" src="{{ url_for('static', filename='assets/os-linux.png') }}" alt=""><span>Linux<small>Open Systems</small></span></button>
+            <button class="vendor windows" type="button" data-tech-view="vms" data-tech-filter="Windows"><img class="platform-img" src="{{ url_for('static', filename='assets/os-windows.png') }}" alt=""><span>Windows<small>Microsoft Systems</small></span></button>
+            <button class="vendor datastore" type="button" data-tech-view="datastores">{{ icon('datastore') }}<span>Datastores<small>Storage Pools</small></span></button>
+            <button class="vendor backup" type="button" data-tech-view="backup_jobs">{{ icon('backup') }}<span>Backups<small>Backup Jobs</small></span></button>
+        </section>
+
+        <section class="view active" id="view-overview">
+            <div class="kpi-grid">
+                <article class="kpi-card action-card" data-card-view="vms" data-card-label="Total VMs">{{ icon('vm', 'kpi-icon') }}<span>Total VMs</span><strong data-summary="total_vms">{{ summary.total_vms }}</strong><em>Live inventory</em></article>
+                <article class="kpi-card action-card" data-card-view="vms" data-card-filter="Production" data-card-label="Production VMs">{{ icon('star', 'kpi-icon') }}<span>Production VMs</span><strong data-summary="production_vms">{{ summary.production_vms }}</strong><em>Business workloads</em></article>
+                <article class="kpi-card success action-card" data-card-view="vms" data-card-filter="Powered On" data-card-label="Powered On">{{ icon('power', 'kpi-icon') }}<span>Powered On</span><strong data-summary="powered_on">{{ summary.powered_on }}</strong><em>Running now</em></article>
+                <article class="kpi-card critical action-card" data-card-view="vms" data-card-filter="Powered Off" data-card-label="Powered Off">{{ icon('power', 'kpi-icon') }}<span>Powered Off</span><strong data-summary="powered_off">{{ summary.powered_off }}</strong><em>Needs review</em></article>
+                <article class="kpi-card action-card" data-card-view="vms" data-card-filter="Yes" data-card-label="VMs with snapshots">{{ icon('camera', 'kpi-icon') }}<span>Snapshots</span><strong data-summary="snapshots">{{ summary.snapshots }}</strong><em>Snapshot watch</em></article>
+                <article class="kpi-card critical action-card" data-card-view="vms" data-card-filter="Critical" data-card-label="Critical Servers">{{ icon('alert', 'kpi-icon') }}<span>Critical Servers</span><strong data-summary="critical">{{ summary.critical }}</strong><em>Priority tier</em></article>
+                <article class="kpi-card action-card" data-card-view="hosts" data-card-label="Hosts">{{ icon('host', 'kpi-icon') }}<span>Hosts</span><strong data-summary="hosts">{{ summary.hosts }}</strong><em>Compute estate</em></article>
+                <article class="kpi-card action-card" data-card-view="datastores" data-card-label="Datastores">{{ icon('datastore', 'kpi-icon') }}<span>Datastores</span><strong data-summary="datastores">{{ summary.datastores }}</strong><em>Storage pools</em></article>
+                <article class="kpi-card success action-card" data-card-view="backup_jobs" data-card-label="Backup Jobs">{{ icon('backup', 'kpi-icon') }}<span>Backups Enabled</span><strong data-summary="backup_enabled">{{ summary.backup_enabled }}</strong><em>Protected VMs</em></article>
+                <article class="kpi-card action-card" data-card-view="vms" data-card-filter="Windows" data-card-label="Windows VMs"><img class="kpi-icon kpi-image-icon" src="{{ url_for('static', filename='assets/os-windows.png') }}" alt=""><span>Windows</span><strong data-summary="windows_vms">{{ summary.windows_vms }}</strong><em>Microsoft estate</em></article>
+                <article class="kpi-card action-card" data-card-view="vms" data-card-filter="Linux|Ubuntu|Red Hat|Photon" data-card-label="Linux VMs"><img class="kpi-icon kpi-image-icon" src="{{ url_for('static', filename='assets/os-linux.png') }}" alt=""><span>Linux</span><strong data-summary="linux_vms">{{ summary.linux_vms }}</strong><em>Open systems</em></article>
+                <article class="kpi-card action-card" data-card-view="vms" data-card-filter="__other_os__" data-card-label="Other OS VMs"><img class="kpi-icon kpi-image-icon" src="{{ url_for('static', filename='assets/os-other.png') }}" alt=""><span>Other OS</span><strong data-summary="other_vms">{{ summary.other_vms }}</strong><em>Non Windows/Linux</em></article>
+            </div>
+
+            <div class="dashboard-grid">
+                <section class="panel storage-panel">
+                    <div class="panel-header"><h2>{{ icon('storage') }}Storage Utilization</h2><span data-summary="storage_used_percent">{{ summary.storage_used_percent }}%</span></div>
+                    <div class="donut-card" style="--value: {{ summary.storage_used_percent }}">
+                        <div class="donut"><strong data-summary="storage_used_percent">{{ summary.storage_used_percent }}%</strong><span>Used</span></div>
+                        <ul class="metric-legend">
+                            <li><i class="legend-used"></i>Used <strong><span data-summary="storage_used_gb">{{ summary.storage_used_gb }}</span> GB</strong></li>
+                            <li><i></i>Total <strong><span data-summary="storage_capacity_gb">{{ summary.storage_capacity_gb }}</span> GB</strong></li>
+                        </ul>
+                    </div>
+                    <div class="meter"><div style="width: {{ summary.storage_used_percent }}%" data-meter="storage"></div></div>
+                </section>
+                <section class="panel"><div class="panel-header"><h2>{{ icon('datastore') }}Top Datastores by Usage</h2><button class="link-button" data-card-view="datastores">View all</button></div><div class="bar-list" id="storage-by-datastore"></div></section>
+                <section class="panel"><div class="panel-header"><h2>{{ icon('power') }}VMs by Power State</h2><span>Live count</span></div><div class="bar-list" id="chart-power"></div></section>
+                <section class="report-card panel">
+                    <div class="report-mark"><img class="brand-logo" data-brand-logo data-default-src="{{ url_for('static', filename='assets/vt-logo-mark.svg', v='20260624-logo-reference-v5') }}" src="{{ branding.logo_url or url_for('static', filename='assets/vt-logo-mark.svg', v='20260624-logo-reference-v5') }}" alt="{{ branding.company_name }}"></div>
+                    <h2 data-brand-report-title>{{ branding.report_title }}</h2>
+                    <p data-brand-company>{{ branding.company_name }}</p>
+                    <div class="report-stats">
+                        <span>{{ icon('vm') }}<b data-summary="total_vms">{{ summary.total_vms }}</b><small>VM Inventory</small></span>
+                        <span>{{ icon('storage') }}<b data-summary="storage_used_percent">{{ summary.storage_used_percent }}%</b><small>Capacity</small></span>
+                        <span>{{ icon('shield') }}<b>97.6%</b><small>Compliance</small></span>
+                        <span>{{ icon('chart') }}<b>Good</b><small>Performance</small></span>
+                    </div>
+                </section>
+                <section class="panel"><div class="panel-header"><h2>{{ icon('linux') }}Platform / OS Distribution</h2><span>Platform mix</span></div><div class="bar-list os-list" id="chart-os"></div></section>
+                <section class="panel"><div class="panel-header"><h2>{{ icon('backup') }}Backup Compliance</h2><span>Protected VMs</span></div><div class="bar-list" id="chart-backup"></div></section>
+                <section class="panel"><div class="panel-header"><h2>{{ icon('alert') }}Operational Alerts</h2><span>Action required</span></div><div class="warning-list" id="risk-warnings"></div></section>
+                <section class="panel"><div class="panel-header"><h2>{{ icon('environments') }}Environment</h2><span>VM split</span></div><div class="bar-list" id="chart-environment"></div></section>
+                <section class="panel"><div class="panel-header"><h2>{{ icon('shield') }}Criticality</h2><span>Business impact</span></div><div class="bar-list" id="chart-criticality"></div></section>
+                <section class="panel dashboard-table-panel compact-panel">
+                    <div class="panel-header"><h2>{{ icon('linux') }}Operating Systems</h2><span>Auto catalog</span></div>
+                    <div class="table-wrap dashboard-table-wrap"><table class="dashboard-table compact-table"><thead><tr><th>Operating System</th><th>VMs</th></tr></thead><tbody id="os-inventory"></tbody></table></div>
+                </section>
+                <section class="panel governance-panel">
+                    <div class="panel-header"><h2>{{ icon('admin') }}Governance Model</h2><span>Server enforced</span></div>
+                    <ul class="governance-list">
+                        <li>Live dropdowns for hosts, clusters, datastores, VLANs, and backup jobs.</li>
+                        <li>Admin users remain superusers with all permissions.</li>
+                        <li>Client users stay read-only until rights are assigned.</li>
+                        <li>Protected resources return assignment warnings before deletion.</li>
+                    </ul>
+                </section>
+            </div>
+
+            <section class="panel dashboard-table-panel">
+                <div class="panel-header">
+                    <h2>{{ icon('vm') }}Recent Virtual Machines</h2>
+                    <div class="panel-actions"><button class="ghost-button" data-card-view="vms">{{ icon('filter') }}Filters</button><a class="ghost-button" href="{{ url_for('export_workbook') }}" data-required-permission="workbook.export">{{ icon('export') }}Export</a></div>
+                </div>
+                <div class="table-wrap dashboard-table-wrap">
+                    <table class="dashboard-table">
+                        <thead><tr><th>VM Name</th><th>Environment</th><th>OS</th><th>Power</th><th>Criticality</th><th>Host</th><th>Datastore</th></tr></thead>
+                        <tbody id="recent-vms"></tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+
+        <section class="view" id="view-clusters"><div class="section-toolbar"><div>{{ icon('clusters') }}<div><h2>Clusters</h2><p>Track each cluster environment, assigned hosts, datastores, and VM count.</p></div></div><button class="primary-button" data-modal="cluster" data-required-permission="resource.create">{{ icon('add') }}Add Cluster</button></div><div class="table-wrap"><table id="table-clusters"></table></div></section>
+        <section class="view" id="view-environments"><div class="section-toolbar"><div>{{ icon('environments') }}<div><h2>Environments</h2><p>Add or edit environment names used by clusters and virtual machines.</p></div></div><button class="primary-button" data-modal="environment" data-required-permission="resource.create">{{ icon('add') }}Add Environment</button></div><div class="table-wrap"><table id="table-environments"></table></div></section>
+        <section class="view" id="view-vms"><div class="section-toolbar"><div>{{ icon('vm') }}<div><h2>VM Inventory</h2><p>Add a VM using live dropdowns from source resources.</p></div></div><button class="primary-button" data-modal="vm" data-required-permission="resource.create">{{ icon('add') }}Add VM</button></div><div class="table-wrap"><table id="table-vms"></table></div></section>
+        <section class="view" id="view-hosts"><div class="section-toolbar"><div>{{ icon('host') }}<div><h2>Hosts</h2><p>New hosts are immediately available in VM Inventory dropdowns.</p></div></div><button class="primary-button" data-modal="host" data-required-permission="resource.create">{{ icon('add') }}Add Host</button></div><div class="table-wrap"><table id="table-hosts"></table></div></section>
+        <section class="view" id="view-datastores"><div class="section-toolbar"><div>{{ icon('datastore') }}<div><h2>Datastores</h2><p>Deletion is blocked when a datastore is assigned to one or more VMs.</p></div></div><button class="primary-button" data-modal="datastore" data-required-permission="resource.create">{{ icon('add') }}Add Datastore</button></div><div class="table-wrap"><table id="table-datastores"></table></div></section>
+        <section class="view" id="view-vlans"><div class="section-toolbar"><div>{{ icon('vlan') }}<div><h2>VLANs</h2><p>Network references are governed and protected when assigned.</p></div></div><button class="primary-button" data-modal="vlan" data-required-permission="resource.create">{{ icon('add') }}Add VLAN</button></div><div class="table-wrap"><table id="table-vlans"></table></div></section>
+        <section class="view" id="view-backup_jobs"><div class="section-toolbar"><div>{{ icon('backup') }}<div><h2>Backup Register</h2><p>Backup jobs can be assigned directly during VM creation.</p></div></div><button class="primary-button" data-modal="backup" data-required-permission="resource.create">{{ icon('add') }}Add Backup Job</button></div><div class="table-wrap"><table id="table-backup_jobs"></table></div></section>
+        <section class="view" id="view-trash"><div class="section-toolbar"><div>{{ icon('trash') }}<div><h2>Trash Bin</h2><p>Deleted inventory records are recoverable here until restored.</p></div></div></div><div class="table-wrap"><table id="table-trash"></table></div></section>
+
+        <section class="view" id="view-admin">
+            <div class="section-toolbar"><div>{{ icon('admin') }}<div><h2>Admin & Client Access</h2><p>Current role: <strong>{{ user.role|upper }}</strong>. Admins can assign or revoke user rights.</p></div></div><div class="toolbar-actions"><button class="primary-button" data-modal="user" data-required-permission="users.manage">{{ icon('add') }}Add User</button></div></div>
+            <div class="admin-grid">
+                <article class="panel"><h3>{{ icon('shield') }}Role Controls</h3><p>Users are read-only by default. Grant create, delete, export, or user-management rights only when needed.</p></article>
+                <article class="panel"><h3>{{ icon('status') }}Permission Catalog</h3><ul class="permission-list">{% for permission in permissions %}<li><strong>{{ permission.label }}</strong><span>{{ permission.description }}</span></li>{% endfor %}</ul></article>
+                <article class="panel branding-panel" data-required-permission="branding.manage">
+                    <h3>{{ icon('edit') }}Branding</h3>
+                    <form id="branding-form" class="branding-form">
+                        <label>Company Name<input name="company_name" value="{{ branding.company_name }}" maxlength="80" required></label>
+                        <label>Logo Image<input name="logo_file" type="file" accept="image/png,image/jpeg,image/webp"></label>
+                        <input type="hidden" name="logo_url" value="{{ branding.logo_url }}">
+                        <label class="full">Tagline<input name="tagline" value="{{ branding.tagline }}" maxlength="180"></label>
+                        <label>Report Title<input name="report_title" value="{{ branding.report_title }}" maxlength="100" required></label>
+                        <label>Report Author<input name="report_author" value="{{ branding.report_author }}" maxlength="80"></label>
+                        <div class="branding-actions">
+                            <label class="branding-remove-logo"><input type="checkbox" name="remove_logo" value="1">Clear Logo</label>
+                            <button class="primary-button" type="submit">{{ icon('status') }}Save Branding</button>
+                        </div>
+                    </form>
+                </article>
+            </div>
+            <div class="section-toolbar compact" data-required-permission="users.manage"><div>{{ icon('user') }}<div><h2>Users & Permissions</h2><p>Tick permissions to grant rights. Untick to revoke them immediately.</p></div></div></div>
+            <div class="table-wrap" data-required-permission="users.manage"><table id="table-users"></table></div>
+        </section>
+    </main>
+
+    <div class="modal-backdrop" id="modal-backdrop" hidden>
+        <section class="modal" role="dialog" aria-modal="true">
+            <button class="modal-close" type="button" data-close-modal aria-label="Close">{{ icon('close') }}</button>
+            <h2 id="modal-title">Add Resource</h2>
+            <form id="resource-form" class="resource-form"></form>
+        </section>
+    </div>
+    <div class="layout-editor-backdrop" id="layout-editor" hidden>
+        <section class="layout-editor-shell" role="dialog" aria-modal="true" aria-labelledby="layout-editor-title">
+            <header class="layout-editor-header">
+                <div>
+                    <span class="layout-editor-icon">{{ icon('dashboard') }}</span>
+                    <div>
+                        <h2 id="layout-editor-title">Overview Layout</h2>
+                        <p>Reorder dashboard sections in a protected editor. The live overview stays stable until you save.</p>
+                    </div>
+                </div>
+                <div class="layout-editor-actions">
+                    <button class="ghost-button" type="button" data-reset-layout>{{ icon('restore') }}Reset</button>
+                    <button class="ghost-button" type="button" data-close-layout-editor>{{ icon('close') }}Cancel</button>
+                    <button class="primary-button" type="button" data-save-layout>{{ icon('status') }}Save Layout</button>
+                </div>
+            </header>
+            <div class="layout-editor-body">
+                <section class="layout-editor-panel">
+                    <div class="layout-editor-panel-title">
+                        <h3>KPI Cards</h3>
+                        <span>Compact row</span>
+                    </div>
+                    <div class="layout-editor-board layout-editor-kpis" data-layout-board="kpis"></div>
+                </section>
+                <section class="layout-editor-panel">
+                    <div class="layout-editor-panel-title">
+                        <h3>Dashboard Panels</h3>
+                        <span>Overview grid</span>
+                    </div>
+                    <div class="layout-editor-board layout-editor-panels" data-layout-board="panels"></div>
+                </section>
+            </div>
+        </section>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

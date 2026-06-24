@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">VT Logo</title>
+  <defs>
+    <linearGradient id="vtTopLeft" x1="165" y1="263" x2="504" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B8D60"/>
+      <stop offset="1" stop-color="#12C986"/>
+    </linearGradient>
+    <linearGradient id="vtTopRight" x1="520" y1="64" x2="859" y2="263" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2DDFA0"/>
+      <stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+    <linearGradient id="vtRight" x1="871" y1="280" x2="783" y2="702" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#58E5B2"/>
+      <stop offset=".55" stop-color="#34D399"/>
+      <stop offset="1" stop-color="#1EA879"/>
+    </linearGradient>
+    <linearGradient id="vtBottomRight" x1="859" y1="719" x2="520" y2="917" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#34D399"/>
+      <stop offset="1" stop-color="#13B77A"/>
+    </linearGradient>
+    <linearGradient id="vtBottomLeft" x1="504" y1="917" x2="165" y2="719" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B7F58"/>
+      <stop offset="1" stop-color="#064E3B"/>
+    </linearGradient>
+    <linearGradient id="vtLeft" x1="153" y1="280" x2="241" y2="702" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#096C4D"/>
+      <stop offset="1" stop-color="#0B8D60"/>
+    </linearGradient>
+    <linearGradient id="vtLetter" x1="288" y1="340" x2="731" y2="663" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111827"/>
+      <stop offset="1" stop-color="#0B111B"/>
+    </linearGradient>
+  </defs>
+  <polygon points="165 263 504 64 504 177 243 330" fill="url(#vtTopLeft)"/>
+  <polygon points="520 64 859 263 781 330 520 177" fill="url(#vtTopRight)"/>
+  <polygon points="871 280 871 702 783 651 783 331" fill="url(#vtRight)"/>
+  <polygon points="859 719 520 917 520 804 781 652" fill="url(#vtBottomRight)"/>
+  <polygon points="504 917 165 719 243 652 504 804" fill="url(#vtBottomLeft)"/>
+  <polygon points="153 280 241 331 241 651 153 702" fill="url(#vtLeft)"/>
+  <text
+    x="512"
+    y="624"
+    text-anchor="middle"
+    font-family="Manrope, Inter, 'Arial Black', Arial, sans-serif"
+    font-size="395"
+    font-weight="900"
+    letter-spacing="-34"
+    fill="url(#vtLetter)"
+    stroke="#DCE7E5"
+    stroke-width="7"
+    paint-order="stroke fill"
+  >VT</text>
+</svg>
