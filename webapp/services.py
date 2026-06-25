@@ -469,7 +469,7 @@ def workbook_host_records() -> list[HostRecord]:
         JOIN clusters ON clusters.id = hosts.cluster_id
         LEFT JOIN vms ON vms.host_id = hosts.id
         LEFT JOIN datastores ON datastores.cluster_id = hosts.cluster_id
-        GROUP BY hosts.id
+        GROUP BY hosts.id, clusters.name
         ORDER BY hosts.hostname
         """
     ).fetchall()
@@ -942,7 +942,7 @@ def list_resource(resource: str) -> list[dict[str, Any]]:
             FROM hosts
             JOIN clusters ON clusters.id = hosts.cluster_id
             LEFT JOIN vms ON vms.host_id = hosts.id
-            GROUP BY hosts.id
+            GROUP BY hosts.id, clusters.name
             ORDER BY hosts.hostname
         """,
         "datastores": """
@@ -953,7 +953,7 @@ def list_resource(resource: str) -> list[dict[str, Any]]:
             FROM datastores
             JOIN clusters ON clusters.id = datastores.cluster_id
             LEFT JOIN vms ON vms.datastore_id = datastores.id
-            GROUP BY datastores.id
+            GROUP BY datastores.id, clusters.name
             ORDER BY datastores.name
         """,
         "vlans": """
