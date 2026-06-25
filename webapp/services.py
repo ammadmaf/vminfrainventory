@@ -8,7 +8,7 @@ from datetime import date
 from typing import Any
 from urllib.parse import urlparse
 
-from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from src.backup import BackupRecord
 from src.capacity import CapacityRecord
@@ -716,6 +716,7 @@ def create_user(payload: dict[str, Any], actor: str) -> dict[str, Any]:
     role = payload.get("role", "client")
     if role not in {"client", "admin"}:
         raise ValueError("Role must be admin or client.")
+    new_password = _validated_password(payload.get("password", ""))
     db.execute(
         """
         INSERT INTO users (username, display_name, role, password_hash)
@@ -725,7 +726,7 @@ def create_user(payload: dict[str, Any], actor: str) -> dict[str, Any]:
             payload["username"].strip(),
             payload.get("display_name", payload["username"]).strip(),
             role,
-            generate_password_hash(payload["password"]),
+            generate_password_hash(new_password),
         ),
     )
     created = row_to_dict(
@@ -786,6 +787,61 @@ def set_user_permissions(
     return user
 
 
+def change_own_password(
+    user_id: int,
+    current_password: str,
+    new_password: str,
+    actor: str,
+) -> dict[str, str]:
+    """Change the current user's password after verifying the old password."""
+    db = get_db()
+    user = row_to_dict(
+        db.execute(
+            "SELECT id, username, password_hash FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+    )
+    if user is None:
+        raise ValueError("User not found.")
+    if not check_password_hash(user["password_hash"], current_password or ""):
+        raise ValueError("Current password is incorrect.")
+
+    clean_password = _validated_password(new_password)
+    db.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (generate_password_hash(clean_password), user_id),
+    )
+    _audit(db, actor, "changed password", "users", user["username"])
+    db.commit()
+    return {"message": "Password updated."}
+
+
+def reset_user_password(
+    user_id: int,
+    new_password: str,
+    actor: str,
+) -> dict[str, str]:
+    """Reset a user's password from the admin panel."""
+    db = get_db()
+    user = row_to_dict(
+        db.execute(
+            "SELECT id, username FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+    )
+    if user is None:
+        raise ValueError("User not found.")
+
+    clean_password = _validated_password(new_password)
+    db.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (generate_password_hash(clean_password), user_id),
+    )
+    _audit(db, actor, "reset password", "users", user["username"])
+    db.commit()
+    return {"message": f"Password reset for {user['username']}."}
+
+
 def list_user_filters(user_id: int) -> list[dict[str, Any]]:
     """Return saved quick filters for the current user."""
     rows = get_db().execute(
@@ -817,22 +873,14 @@ def create_user_filter(
         raise ValueError("Filter search term is required.")
 
     db = get_db()
-    db.execute(
+    created = row_to_dict(db.execute(
         """
         INSERT INTO user_filters (user_id, label, target_view, search_term)
         VALUES (?, ?, ?, ?)
+        RETURNING id, label, target_view, search_term, created_at
         """,
         (user_id, label[:40], target_view, search_term[:80]),
-    )
-    created = row_to_dict(
-        db.execute(
-            """
-            SELECT id, label, target_view, search_term, created_at
-            FROM user_filters
-            WHERE id = last_insert_rowid()
-            """
-        ).fetchone()
-    )
+    ).fetchone())
     _audit(db, actor, "created filter", "user_filters", created["label"])
     db.commit()
     return created
@@ -1443,7 +1491,10 @@ def _dashboard_warnings() -> list[dict[str, Any]]:
 
 def _scalar(query: str) -> int:
     """Return an integer scalar query result."""
-    return int(get_db().execute(query).fetchone()[0])
+    row = get_db().execute(query).fetchone()
+    if isinstance(row, dict):
+        return int(next(iter(row.values())))
+    return int(row[0])
 
 
 def _validate_logo_url(value: str) -> None:
@@ -1488,6 +1539,16 @@ def _nullable_int(value: Any) -> int | None:
     if value in (None, "", "null"):
         return None
     return int(value)
+
+
+def _validated_password(value: Any) -> str:
+    """Return a password that meets the minimum local account policy."""
+    password = str(value or "")
+    if len(password) < 10:
+        raise ValueError("Password must be at least 10 characters.")
+    if password.strip() != password:
+        raise ValueError("Password cannot start or end with spaces.")
+    return password
 
 
 def _validate_resource(resource: str) -> None:

@@ -1275,14 +1275,16 @@ tbody tr:hover,
     grid-column: 1 / -1;
 }
 
-.branding-form {
+.branding-form,
+.security-form {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
     margin-top: 14px;
 }
 
-.branding-form label {
+.branding-form label,
+.security-form label {
     display: grid;
     gap: 7px;
     color: var(--muted);
@@ -1291,11 +1293,14 @@ tbody tr:hover,
 }
 
 .branding-form label.full,
-.branding-actions {
+.branding-actions,
+.security-form label:last-of-type,
+.security-actions {
     grid-column: 1 / -1;
 }
 
-.branding-form input {
+.branding-form input,
+.security-form input {
     width: 100%;
     min-height: 42px;
     border: 1px solid var(--line);
@@ -1323,12 +1328,14 @@ tbody tr:hover,
     cursor: pointer;
 }
 
-.branding-form input:focus {
+.branding-form input:focus,
+.security-form input:focus {
     border-color: var(--emerald);
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
 }
 
-.branding-actions {
+.branding-actions,
+.security-actions {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -1738,11 +1745,13 @@ tbody tr:hover,
         grid-column: span 1;
     }
 
-    .branding-form {
+    .branding-form,
+    .security-form {
         grid-template-columns: 1fr;
     }
 
-    .branding-actions {
+    .branding-actions,
+    .security-actions {
         align-items: stretch;
         flex-direction: column;
     }

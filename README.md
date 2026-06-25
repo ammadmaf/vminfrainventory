@@ -24,7 +24,8 @@ Implemented workbook modules include:
 - Reusable workbook styling
 - Commercial PDF and PNG preview assets
 - Flask-based enterprise web console
-- SQLite persistence for live resource management
+- PostgreSQL persistence for Docker/production deployments
+- SQLite fallback for local development without `DATABASE_URL`
 - Admin and client role-based access
 - Assignable user permissions from the admin panel
 - Dynamic dropdowns backed by live source tables
@@ -126,7 +127,48 @@ For existing local databases, update user passwords from the admin panel.
 
 ## Docker
 
-Build and run locally:
+Copy the example environment file and set strong secrets before first start:
+
+```bash
+cp .env.example .env
+```
+
+Required values:
+
+```text
+POSTGRES_PASSWORD
+VIRTUALIZATION_TOOLKIT_SECRET_KEY
+VIRTUALIZATION_TOOLKIT_ADMIN_PASSWORD
+VIRTUALIZATION_TOOLKIT_CLIENT_PASSWORD
+```
+
+Run the production-style Postgres stack:
+
+```bash
+docker compose up -d --build
+```
+
+Open:
+
+```text
+http://127.0.0.1:5000
+```
+
+Persistent Docker volumes:
+
+- `vminfrainventory_postgres` stores the PostgreSQL database.
+- `vminfrainventory_branding_uploads` stores uploaded company logos.
+- `vminfrainventory_output` stores generated workbook exports.
+
+The first launch creates `admin` and `client` users using the password
+environment variables. After the database volume exists, changing those
+environment variables does not reset existing user passwords; update users from
+the admin panel or recreate the database volume.
+
+Set `VIRTUALIZATION_TOOLKIT_COOKIE_SECURE=true` only when the app is served
+through HTTPS. Keep it `false` for direct plain HTTP access.
+
+Build and run the app container manually with SQLite fallback:
 
 ```powershell
 docker build -t virtualization-administration-toolkit .
@@ -137,7 +179,8 @@ docker run -p 5000:5000 `
   virtualization-administration-toolkit
 ```
 
-For persistent data, mount `/app/instance` to a managed volume.
+For SQLite fallback persistence, mount `/app/instance` to a managed volume.
+For production, prefer the Compose Postgres stack above.
 
 ## Web Console Capabilities
 

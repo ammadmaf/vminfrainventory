@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vminfrainventory-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-vminfrainventory}
+      POSTGRES_USER: ${POSTGRES_USER:-vminfrainventory}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - vminfrainventory_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vminfrainventory} -d ${POSTGRES_DB:-vminfrainventory}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ammadmaf/vminfrainventory:latest
+    container_name: vminfrainventory
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-5000}:5000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vminfrainventory}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-vminfrainventory}
+      VIRTUALIZATION_TOOLKIT_SECRET_KEY: ${VIRTUALIZATION_TOOLKIT_SECRET_KEY:?Set VIRTUALIZATION_TOOLKIT_SECRET_KEY in .env}
+      VIRTUALIZATION_TOOLKIT_ADMIN_PASSWORD: ${VIRTUALIZATION_TOOLKIT_ADMIN_PASSWORD:?Set VIRTUALIZATION_TOOLKIT_ADMIN_PASSWORD in .env}
+      VIRTUALIZATION_TOOLKIT_CLIENT_PASSWORD: ${VIRTUALIZATION_TOOLKIT_CLIENT_PASSWORD:?Set VIRTUALIZATION_TOOLKIT_CLIENT_PASSWORD in .env}
+      VIRTUALIZATION_TOOLKIT_COOKIE_SECURE: ${VIRTUALIZATION_TOOLKIT_COOKIE_SECURE:-false}
+    volumes:
+      - vminfrainventory_output:/app/output
+      - vminfrainventory_branding_uploads:/app/webapp/static/uploads/branding
+
+volumes:
+  vminfrainventory_postgres:
+  vminfrainventory_output:
+  vminfrainventory_branding_uploads:

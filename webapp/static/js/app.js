@@ -293,6 +293,7 @@ async function initializeApp() {
     initializeOverviewLayout();
     bindLayoutEditor();
     bindBrandingForm();
+    bindPasswordForm();
     bindGlobalSearch();
     bindRefreshActions();
     bindModals();
@@ -825,6 +826,39 @@ function bindBrandingForm() {
     applyBranding();
 }
 
+function bindPasswordForm() {
+    const form = document.getElementById("password-form");
+    if (!form) {
+        return;
+    }
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const payload = Object.fromEntries(new FormData(form).entries());
+        if (payload.new_password !== payload.confirm_password) {
+            showToast("New password and confirmation do not match.", true);
+            return;
+        }
+        try {
+            const response = await fetch("/api/account/password", {
+                method: "PUT",
+                headers: jsonHeaders(),
+                body: JSON.stringify({
+                    current_password: payload.current_password,
+                    new_password: payload.new_password,
+                }),
+            });
+            const body = await response.json();
+            if (!response.ok) {
+                throw new Error(body.message || "Unable to update password.");
+            }
+            form.reset();
+            showToast(body.message || "Password updated.");
+        } catch (error) {
+            showToast(error.message, true);
+        }
+    });
+}
+
 function applyBranding() {
     const branding = {
         company_name: "Virtualization Administration Toolkit",
@@ -1258,10 +1292,12 @@ function renderUsersTable(table) {
         return `<th class="permission-cell">${escapeHtml(permission.label)}</th>`;
     }).join("");
     const permissionFilterCells = state.assignablePermissions.map(() => '<th class="column-filter-cell permission-cell"></th>').join("");
+    const passwordHeader = hasPermission("users.manage") ? '<th class="action-column">Password</th>' : "";
+    const passwordFilterCell = hasPermission("users.manage") ? '<th class="column-filter-cell action-column"></th>' : "";
     table.innerHTML = `
         <thead>
-            <tr>${renderHeaderCells("users", columns)}${permissionHeaders}</tr>
-            <tr class="column-filter-row">${renderColumnFilterCells("users", columns)}${permissionFilterCells}</tr>
+            <tr>${renderHeaderCells("users", columns)}${permissionHeaders}${passwordHeader}</tr>
+            <tr class="column-filter-row">${renderColumnFilterCells("users", columns)}${permissionFilterCells}${passwordFilterCell}</tr>
         </thead>
         <tbody>
             ${users.map(renderUserRow).join("")}
@@ -1270,6 +1306,9 @@ function renderUsersTable(table) {
     bindTableControls(table, "users");
     table.querySelectorAll("[data-permission-toggle]").forEach((toggle) => {
         toggle.addEventListener("change", () => updateUserPermissions(toggle.dataset.userId));
+    });
+    table.querySelectorAll("[data-reset-password]").forEach((button) => {
+        button.addEventListener("click", () => resetUserPassword(button.dataset.userId, button.dataset.username));
     });
 }
 
@@ -1293,12 +1332,16 @@ function renderUserRow(user) {
             </td>
         `;
     }).join("");
+    const passwordCell = hasPermission("users.manage")
+        ? `<td><button class="row-action" data-reset-password data-user-id="${user.id}" data-username="${escapeHtml(user.username)}">${icon("restore")}Reset</button></td>`
+        : "";
     return `
         <tr>
             <td>${escapeHtml(user.username)}</td>
             <td>${escapeHtml(user.display_name)}</td>
             <td>${formatValue("role", user.role)}</td>
             ${permissionCells}
+            ${passwordCell}
         </tr>
     `;
 }
@@ -1592,6 +1635,31 @@ async function updateUserPermissions(userId) {
     } catch (error) {
         showToast(error.message, true);
         await loadResource("users");
+    }
+}
+
+async function resetUserPassword(userId, username) {
+    const newPassword = window.prompt(`Enter a new password for ${username}. Minimum 10 characters.`);
+    if (newPassword === null) {
+        return;
+    }
+    if (newPassword.length < 10) {
+        showToast("Password must be at least 10 characters.", true);
+        return;
+    }
+    try {
+        const response = await fetch(`/api/users/${userId}/password`, {
+            method: "PUT",
+            headers: jsonHeaders(),
+            body: JSON.stringify({ new_password: newPassword }),
+        });
+        const body = await response.json();
+        if (!response.ok) {
+            throw new Error(body.message || "Unable to reset password.");
+        }
+        showToast(body.message || `Password reset for ${username}.`);
+    } catch (error) {
+        showToast(error.message, true);
     }
 }
 
