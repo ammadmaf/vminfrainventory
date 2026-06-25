@@ -421,7 +421,12 @@ class DatabaseConnection:
         return self.connection.execute(self._translate_sql(sql), params)
 
     def executemany(self, sql: str, params: list[tuple[Any, ...]]) -> Any:
-        return self.connection.executemany(self._translate_sql(sql), params)
+        translated = self._translate_sql(sql)
+        if self.dialect == "sqlite":
+            return self.connection.executemany(translated, params)
+        with self.connection.cursor() as cursor:
+            cursor.executemany(translated, params)
+            return cursor
 
     def executescript(self, script: str) -> None:
         if self.dialect == "sqlite":
@@ -443,6 +448,8 @@ class DatabaseConnection:
     def __exit__(self, exc_type: Any, exc: Any, traceback: Any) -> None:
         if exc_type is None:
             self.commit()
+        else:
+            self.connection.rollback()
         self.close()
 
     def _translate_sql(self, sql: str) -> str:
