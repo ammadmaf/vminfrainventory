@@ -455,7 +455,7 @@ class DatabaseConnection:
     def _translate_sql(self, sql: str) -> str:
         if self.dialect == "sqlite":
             return sql
-        translated = sql.replace("?", "%s")
+        translated = sql.replace("%", "%%").replace("?", "%s")
         translated = translated.replace("INSERT OR IGNORE INTO", "INSERT INTO")
         if "INSERT INTO" in translated and "OR IGNORE" not in sql and "ON CONFLICT" not in translated:
             pass
