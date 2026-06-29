@@ -1022,6 +1022,13 @@ def update_resource(
     if resource == "environments":
         return _update_environment(db, resource_id, payload, actor, existing)
 
+    if (
+        resource == "vms"
+        and "ip_address" in payload
+        and not str(payload.get("ip_address", "")).strip()
+    ):
+        raise ValueError("IP Address is required.")
+
     fields = [
         field for field in UPDATE_FIELDS[resource]
         if field in payload and payload[field] is not None
@@ -1266,6 +1273,9 @@ def _create_backup_job(db: sqlite3.Connection, payload: dict[str, Any]) -> dict[
 
 
 def _create_vm(db: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
+    ip_address = str(payload.get("ip_address", "")).strip()
+    if not ip_address:
+        raise ValueError("IP Address is required.")
     _ensure_environment(db, payload.get("environment", "Production"))
     db.execute(
         """
@@ -1294,7 +1304,7 @@ def _create_vm(db: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any
             int(payload.get("vcpu", 2)),
             int(payload.get("ram_gb", 8)),
             int(payload.get("disk_gb", 100)),
-            payload.get("ip_address", ""),
+            ip_address,
             int(payload["vlan_id"]),
             1 if payload.get("backup_enabled", True) in (True, "true", "1", 1) else 0,
             _nullable_int(payload.get("backup_job_id")),

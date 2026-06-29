@@ -8,8 +8,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ branding.company_name }}</title>
     <link rel="icon" href="{{ url_for('static', filename='assets/vt-logo-mark.svg', v='20260624-logo-reference-v5') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v='20260624-table-controls-v1') }}">
-    <script defer src="{{ url_for('static', filename='js/app.js', v='20260624-table-controls-v1') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v='20260629-layout-visibility-v6') }}">
+    <script defer src="{{ url_for('static', filename='js/app.js', v='20260629-layout-visibility-v6') }}"></script>
 </head>
 <body
     data-role="{{ user.role }}"
@@ -170,7 +170,7 @@
 
         <section class="view" id="view-clusters"><div class="section-toolbar"><div>{{ icon('clusters') }}<div><h2>Clusters</h2><p>Track each cluster environment, assigned hosts, datastores, and VM count.</p></div></div><button class="primary-button" data-modal="cluster" data-required-permission="resource.create">{{ icon('add') }}Add Cluster</button></div><div class="table-wrap"><table id="table-clusters"></table></div></section>
         <section class="view" id="view-environments"><div class="section-toolbar"><div>{{ icon('environments') }}<div><h2>Environments</h2><p>Add or edit environment names used by clusters and virtual machines.</p></div></div><button class="primary-button" data-modal="environment" data-required-permission="resource.create">{{ icon('add') }}Add Environment</button></div><div class="table-wrap"><table id="table-environments"></table></div></section>
-        <section class="view" id="view-vms"><div class="section-toolbar"><div>{{ icon('vm') }}<div><h2>VM Inventory</h2><p>Add a VM using live dropdowns from source resources.</p></div></div><button class="primary-button" data-modal="vm" data-required-permission="resource.create">{{ icon('add') }}Add VM</button></div><div class="table-wrap"><table id="table-vms"></table></div></section>
+        <section class="view" id="view-vms"><div class="section-toolbar"><div>{{ icon('vm') }}<div><h2>VM Inventory</h2><p>Add a VM using live dropdowns from source resources.</p></div></div><div class="toolbar-actions vm-toolbar-actions"><div class="column-settings"><button class="ghost-button" type="button" data-column-settings-toggle="vms" aria-expanded="false">{{ icon('edit') }}Columns</button><div class="column-settings-panel" data-column-settings-panel="vms" hidden></div></div><button class="primary-button" data-modal="vm" data-required-permission="resource.create">{{ icon('add') }}Add VM</button></div></div><div class="table-wrap"><table id="table-vms"></table></div></section>
         <section class="view" id="view-hosts"><div class="section-toolbar"><div>{{ icon('host') }}<div><h2>Hosts</h2><p>New hosts are immediately available in VM Inventory dropdowns.</p></div></div><button class="primary-button" data-modal="host" data-required-permission="resource.create">{{ icon('add') }}Add Host</button></div><div class="table-wrap"><table id="table-hosts"></table></div></section>
         <section class="view" id="view-datastores"><div class="section-toolbar"><div>{{ icon('datastore') }}<div><h2>Datastores</h2><p>Deletion is blocked when a datastore is assigned to one or more VMs.</p></div></div><button class="primary-button" data-modal="datastore" data-required-permission="resource.create">{{ icon('add') }}Add Datastore</button></div><div class="table-wrap"><table id="table-datastores"></table></div></section>
         <section class="view" id="view-vlans"><div class="section-toolbar"><div>{{ icon('vlan') }}<div><h2>VLANs</h2><p>Network references are governed and protected when assigned.</p></div></div><button class="primary-button" data-modal="vlan" data-required-permission="resource.create">{{ icon('add') }}Add VLAN</button></div><div class="table-wrap"><table id="table-vlans"></table></div></section>
@@ -228,7 +228,7 @@
                     <span class="layout-editor-icon">{{ icon('dashboard') }}</span>
                     <div>
                         <h2 id="layout-editor-title">Overview Layout</h2>
-                        <p>Reorder dashboard sections in a protected editor. The live overview stays stable until you save.</p>
+                        <p>Reorder, show, or hide dashboard sections. The live overview stays stable until you save.</p>
                     </div>
                 </div>
                 <div class="layout-editor-actions">
@@ -241,14 +241,14 @@
                 <section class="layout-editor-panel">
                     <div class="layout-editor-panel-title">
                         <h3>KPI Cards</h3>
-                        <span>Compact row</span>
+                        <span>Drag, show, or hide</span>
                     </div>
                     <div class="layout-editor-board layout-editor-kpis" data-layout-board="kpis"></div>
                 </section>
                 <section class="layout-editor-panel">
                     <div class="layout-editor-panel-title">
                         <h3>Dashboard Panels</h3>
-                        <span>Overview grid</span>
+                        <span>Drag, show, or hide</span>
                     </div>
                     <div class="layout-editor-board layout-editor-panels" data-layout-board="panels"></div>
                 </section>

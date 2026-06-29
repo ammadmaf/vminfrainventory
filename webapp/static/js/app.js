@@ -14,6 +14,7 @@ const state = {
     tableFilterLabels: {},
     tableColumnFilters: {},
     tableSorts: {},
+    tableHiddenColumns: loadTableHiddenColumns(),
     globalSearch: "",
 };
 
@@ -72,6 +73,7 @@ const operatingSystemOptions = [
 const tableColumns = {
     vms: [
         ["name", "VM Name"],
+        ["ip_address", "IP Address"],
         ["environment", "Environment"],
         ["operating_system", "OS"],
         ["hostname", "Host"],
@@ -144,6 +146,10 @@ const tableColumns = {
         ["deleted_by", "Deleted By"],
         ["deleted_at", "Deleted At"],
     ],
+};
+
+const alwaysVisibleTableColumns = {
+    vms: new Set(["ip_address"]),
 };
 
 const modalDefinitions = {
@@ -238,7 +244,7 @@ const modalDefinitions = {
             ["environment", "Environment", "reference-label", { source: "environments", required: true }],
             ["business_unit", "Business Unit", "text", { value: "Infrastructure" }],
             ["owner", "Owner", "text", { value: "Infrastructure Operations" }],
-            ["application", "Application", "text", { value: "Platform Services" }],
+            ["application", "Application", "text", { value: "Platform Services", advanced: true }],
             ["operating_system", "Operating System", "select-custom", {
                 options: operatingSystemOptions,
                 value: "Windows Server 2025",
@@ -246,26 +252,28 @@ const modalDefinitions = {
             ["host_id", "Host", "reference", { source: "hosts", required: true }],
             ["cluster_id", "Cluster", "reference", { source: "clusters", required: true }],
             ["datastore_id", "Datastore", "reference", { source: "datastores", required: true }],
-            ["folder", "Folder", "text", { value: "/Production/Applications" }],
-            ["resource_pool", "Resource Pool", "text", { value: "RP-Production" }],
+            ["folder", "Folder", "text", { value: "/Production/Applications", advanced: true }],
+            ["resource_pool", "Resource Pool", "text", { value: "RP-Production", advanced: true }],
             ["vcpu", "vCPU", "number", { value: 2 }],
             ["ram_gb", "RAM GB", "number", { value: 8 }],
             ["disk_gb", "Disk GB", "number", { value: 100 }],
-            ["ip_address", "IP Address", "text"],
+            ["ip_address", "IP Address", "text", { required: true }],
             ["vlan_id", "VLAN", "reference", { source: "vlans", required: true }],
             ["backup_enabled", "Backup Enabled", "select", { options: ["true", "false"] }],
             ["backup_job_id", "Backup Job", "reference", { source: "backup_jobs" }],
             ["snapshot", "Snapshot", "select", { options: ["No", "Yes"] }],
             ["guest_tools", "Guest Tools", "select", {
                 options: ["Current", "Outdated", "Not Installed", "Not Running"],
+                advanced: true,
             }],
             ["power_state", "Power State", "select", {
                 options: ["Powered On", "Powered Off", "Suspended"],
             }],
             ["criticality", "Criticality", "select", {
                 options: ["Critical", "High", "Medium", "Low"],
+                advanced: true,
             }],
-            ["notes", "Notes", "textarea", { full: true }],
+            ["notes", "Notes", "textarea", { full: true, advanced: true }],
         ],
     },
     user: {
@@ -287,6 +295,7 @@ async function initializeApp() {
     document.body.dataset.appInitialized = "true";
     refreshPermissionControls();
     bindNavigation();
+    bindVmColumnSettings();
     bindTopbarActions();
     bindTechnologyActions();
     bindCardActions();
@@ -311,6 +320,104 @@ function bindNavigation() {
         button.addEventListener("click", () => {
             switchView(button.dataset.view);
         });
+    });
+}
+
+function loadTableHiddenColumns() {
+    try {
+        const saved = JSON.parse(window.localStorage.getItem("vtTableHiddenColumnsV1") || "{}");
+        return saved && typeof saved === "object" ? saved : {};
+    } catch (_error) {
+        return {};
+    }
+}
+
+function saveTableHiddenColumns() {
+    try {
+        window.localStorage.setItem(
+            "vtTableHiddenColumnsV1",
+            JSON.stringify(state.tableHiddenColumns),
+        );
+    } catch (_error) {
+        // Keep the current-session preference when browser storage is unavailable.
+    }
+}
+
+function visibleTableColumns(resource) {
+    const hidden = new Set(state.tableHiddenColumns[resource] || []);
+    const locked = alwaysVisibleTableColumns[resource] || new Set();
+    return (tableColumns[resource] || []).filter(([key]) => locked.has(key) || !hidden.has(key));
+}
+
+function bindVmColumnSettings() {
+    const toggle = document.querySelector('[data-column-settings-toggle="vms"]');
+    const panel = document.querySelector('[data-column-settings-panel="vms"]');
+    if (!toggle || !panel) {
+        return;
+    }
+    const renderPanel = () => {
+        const hidden = new Set(state.tableHiddenColumns.vms || []);
+        panel.innerHTML = `
+            <div class="column-settings-header">
+                <strong>Visible columns</strong>
+                <button type="button" data-reset-columns>Show all</button>
+            </div>
+            <div class="column-settings-options">
+                ${tableColumns.vms.map(([key, label]) => {
+                    const locked = alwaysVisibleTableColumns.vms.has(key);
+                    const checked = locked || !hidden.has(key);
+                    return `
+                        <label>
+                            <input
+                                type="checkbox"
+                                data-column-visibility-key="${escapeHtml(key)}"
+                                ${checked ? "checked" : ""}
+                                ${locked ? "disabled" : ""}
+                            >
+                            <span>${escapeHtml(label)}</span>
+                            ${locked ? "<small>Always visible</small>" : ""}
+                        </label>
+                    `;
+                }).join("")}
+            </div>
+        `;
+        panel.querySelectorAll("[data-column-visibility-key]").forEach((input) => {
+            input.addEventListener("change", () => {
+                const hiddenColumns = new Set(state.tableHiddenColumns.vms || []);
+                if (input.checked) {
+                    hiddenColumns.delete(input.dataset.columnVisibilityKey);
+                } else {
+                    hiddenColumns.add(input.dataset.columnVisibilityKey);
+                }
+                state.tableHiddenColumns.vms = [...hiddenColumns];
+                saveTableHiddenColumns();
+                renderTable("vms");
+            });
+        });
+        panel.querySelector("[data-reset-columns]").addEventListener("click", () => {
+            delete state.tableHiddenColumns.vms;
+            saveTableHiddenColumns();
+            renderPanel();
+            renderTable("vms");
+        });
+    };
+    renderPanel();
+    toggle.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const willOpen = panel.hidden;
+        panel.hidden = !willOpen;
+        toggle.setAttribute("aria-expanded", String(willOpen));
+    });
+    panel.addEventListener("click", (event) => event.stopPropagation());
+    document.addEventListener("click", () => {
+        panel.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            panel.hidden = true;
+            toggle.setAttribute("aria-expanded", "false");
+        }
     });
 }
 
@@ -459,8 +566,11 @@ function bindLayoutEditor() {
 }
 
 function applySavedLayout() {
-    applyLayoutOrder(".kpi-grid", getSavedLayout().kpis);
-    applyLayoutOrder(".dashboard-grid", getSavedLayout().panels);
+    const layout = getSavedLayout();
+    applyLayoutOrder(".kpi-grid", layout.kpis);
+    applyLayoutOrder(".dashboard-grid", layout.panels);
+    applyLayoutVisibility(".kpi-grid", layout.hidden?.kpis);
+    applyLayoutVisibility(".dashboard-grid", layout.hidden?.panels);
 }
 
 function getSavedLayout() {
@@ -503,11 +613,18 @@ function populateLayoutBoard(boardName, sourceSelector) {
         item.className = "layout-editor-card";
         item.draggable = true;
         item.dataset.layoutId = card.dataset.layoutId;
+        const isVisible = !card.classList.contains("overview-layout-hidden");
+        item.dataset.layoutVisible = String(isVisible);
         item.innerHTML = `
             <span class="layout-drag-handle">${icon("more")}</span>
             <strong>${escapeHtml(layoutItemTitle(card))}</strong>
             <em>${escapeHtml(layoutItemMeta(card))}</em>
+            <button class="layout-visibility-toggle" type="button" data-toggle-layout-visibility aria-pressed="${isVisible}">
+                <span aria-hidden="true"></span>
+                <b>${isVisible ? "Visible" : "Hidden"}</b>
+            </button>
         `;
+        item.classList.toggle("layout-item-hidden", !isVisible);
         board.appendChild(item);
     });
     bindLayoutBoard(board);
@@ -518,7 +635,20 @@ function bindLayoutBoard(board) {
         return;
     }
     board.dataset.bound = "true";
+    board.addEventListener("click", (event) => {
+        const toggle = event.target.closest("[data-toggle-layout-visibility]");
+        if (!toggle || !board.contains(toggle)) {
+            return;
+        }
+        const item = toggle.closest(".layout-editor-card");
+        const isVisible = item.dataset.layoutVisible !== "false";
+        setLayoutEditorItemVisibility(item, !isVisible);
+    });
     board.addEventListener("dragstart", (event) => {
+        if (event.target.closest("[data-toggle-layout-visibility]")) {
+            event.preventDefault();
+            return;
+        }
         const item = event.target.closest(".layout-editor-card");
         if (!item || !board.contains(item)) {
             return;
@@ -559,6 +689,10 @@ function saveLayoutEditor() {
     const layout = {
         kpis: readLayoutBoard("kpis"),
         panels: readLayoutBoard("panels"),
+        hidden: {
+            kpis: readHiddenLayoutBoard("kpis"),
+            panels: readHiddenLayoutBoard("panels"),
+        },
     };
     window.localStorage.setItem("vtOverviewLayoutV2", JSON.stringify(layout));
     applySavedLayout();
@@ -570,6 +704,8 @@ function resetOverviewLayout() {
     window.localStorage.removeItem("vtOverviewLayoutV2");
     applyLayoutOrder(".kpi-grid", defaultLayoutOrder(".kpi-grid"));
     applyLayoutOrder(".dashboard-grid", defaultLayoutOrder(".dashboard-grid"));
+    applyLayoutVisibility(".kpi-grid", []);
+    applyLayoutVisibility(".dashboard-grid", []);
     openLayoutEditor();
     showToast("Overview layout reset.");
 }
@@ -578,6 +714,24 @@ function readLayoutBoard(boardName) {
     return Array.from(document.querySelectorAll(`[data-layout-board="${boardName}"] .layout-editor-card`))
         .map((item) => item.dataset.layoutId)
         .filter(Boolean);
+}
+
+function readHiddenLayoutBoard(boardName) {
+    return Array.from(document.querySelectorAll(`[data-layout-board="${boardName}"] .layout-editor-card`))
+        .filter((item) => item.dataset.layoutVisible === "false")
+        .map((item) => item.dataset.layoutId)
+        .filter(Boolean);
+}
+
+function setLayoutEditorItemVisibility(item, isVisible) {
+    item.dataset.layoutVisible = String(isVisible);
+    item.classList.toggle("layout-item-hidden", !isVisible);
+    const toggle = item.querySelector("[data-toggle-layout-visibility]");
+    toggle?.setAttribute("aria-pressed", String(isVisible));
+    const label = toggle?.querySelector("b");
+    if (label) {
+        label.textContent = isVisible ? "Visible" : "Hidden";
+    }
 }
 
 function defaultLayoutOrder(containerSelector) {
@@ -606,6 +760,17 @@ function applyLayoutOrder(containerSelector, order = []) {
         if (!applied.has(id)) {
             container.appendChild(card);
         }
+    });
+}
+
+function applyLayoutVisibility(containerSelector, hiddenIds = []) {
+    const container = document.querySelector(containerSelector);
+    const hidden = new Set(Array.isArray(hiddenIds) ? hiddenIds : []);
+    if (!container) {
+        return;
+    }
+    Array.from(container.children).forEach((card) => {
+        card.classList.toggle("overview-layout-hidden", hidden.has(card.dataset.layoutId));
     });
 }
 
@@ -900,8 +1065,13 @@ function renderTable(resource) {
         renderTrashTable(table);
         return;
     }
-    const columns = tableColumns[resource];
-    const rows = sortedRows(resource, columns, filteredRows(resource, columns, state.resources[resource] || []));
+    const allColumns = tableColumns[resource];
+    const columns = visibleTableColumns(resource);
+    const rows = sortedRows(
+        resource,
+        allColumns,
+        filteredRows(resource, allColumns, state.resources[resource] || []),
+    );
     const actionHeader = hasRowActions() ? "<th>Action</th>" : "";
     const colspan = columns.length + (hasRowActions() ? 1 : 0);
     table.innerHTML = `
@@ -1388,6 +1558,7 @@ async function openModal(type, row = null) {
         : definition.title;
     const form = document.getElementById("resource-form");
     form.innerHTML = `
+        ${type === "vm" ? renderVmFormModeToggle() : ""}
         ${definition.fields.map((field) => renderField(field, row)).join("")}
         <div class="modal-actions">
             <button class="ghost-button" type="button" data-cancel-modal>${icon("close")}Cancel</button>
@@ -1396,6 +1567,7 @@ async function openModal(type, row = null) {
     `;
     form.onsubmit = (event) => submitResource(event, definition, row?.id || null);
     form.querySelector("[data-cancel-modal]").addEventListener("click", closeModal);
+    initializeVmFormModes(form);
     initializeCustomSelects(form);
     const hostSelect = form.querySelector('[name="host_id"]');
     if (hostSelect) {
@@ -1423,13 +1595,15 @@ function closeModal() {
 function renderField([name, label, type, options = {}], row = null) {
     const required = options.required ? "required" : "";
     const full = options.full ? " full" : "";
+    const advanced = options.advanced ? " advanced-field" : "";
+    const advancedAttribute = options.advanced ? "data-advanced-field" : "";
     const rawValue = row && Object.prototype.hasOwnProperty.call(row, name)
         ? row[name]
         : options.value;
     const fieldValue = normalizedFormValue(name, rawValue);
     if (type === "textarea") {
         return `
-            <label class="${full}">
+            <label class="${full}${advanced}" ${advancedAttribute}>
                 ${label}
                 <textarea name="${name}" rows="3" ${required}>${escapeHtml(fieldValue || "")}</textarea>
             </label>
@@ -1438,7 +1612,7 @@ function renderField([name, label, type, options = {}], row = null) {
     if (type === "select") {
         const choices = options.options || [];
         return `
-            <label class="${full}">
+            <label class="${full}${advanced}" ${advancedAttribute}>
                 ${label}
                 <select name="${name}" ${required}>
                     ${choices.map((choice) => {
@@ -1457,7 +1631,7 @@ function renderField([name, label, type, options = {}], row = null) {
         const customValue = currentValue && !isKnownValue ? currentValue : "";
         const customHidden = selectValue === "__custom__" ? "" : "hidden";
         return `
-            <label class="${full}">
+            <label class="${full}${advanced}" ${advancedAttribute}>
                 ${label}
                 <select name="${name}" data-custom-select="${name}" ${required}>
                     ${choices.map((choice) => {
@@ -1467,7 +1641,7 @@ function renderField([name, label, type, options = {}], row = null) {
                     <option value="__custom__" ${selectValue === "__custom__" ? "selected" : ""}>Custom / Other</option>
                 </select>
             </label>
-            <label class="${full} custom-field" data-custom-field="${name}" ${customHidden}>
+            <label class="${full}${advanced} custom-field" data-custom-field="${name}" ${advancedAttribute} ${customHidden}>
                 Custom ${label}
                 <input
                     name="${name}_custom"
@@ -1481,7 +1655,7 @@ function renderField([name, label, type, options = {}], row = null) {
     if (type === "reference") {
         const choices = state.referenceOptions[options.source] || [];
         return `
-            <label class="${full}">
+            <label class="${full}${advanced}" ${advancedAttribute}>
                 ${label}
                 <select name="${name}" ${required}>
                     <option value="">Select ${escapeHtml(label)}</option>
@@ -1496,7 +1670,7 @@ function renderField([name, label, type, options = {}], row = null) {
     if (type === "reference-label") {
         const choices = state.referenceOptions[options.source] || [];
         return `
-            <label class="${full}">
+            <label class="${full}${advanced}" ${advancedAttribute}>
                 ${label}
                 <select name="${name}" ${required}>
                     <option value="">Select ${escapeHtml(label)}</option>
@@ -1509,11 +1683,52 @@ function renderField([name, label, type, options = {}], row = null) {
         `;
     }
     return `
-        <label class="${full}">
+        <label class="${full}${advanced}" ${advancedAttribute}>
             ${label}
             <input name="${name}" type="${type}" value="${escapeHtml(fieldValue ?? "")}" ${required}>
         </label>
     `;
+}
+
+function renderVmFormModeToggle() {
+    return `
+        <div class="vm-form-mode" role="group" aria-label="VM form detail level">
+            <div class="vm-form-mode-buttons">
+                <button class="form-mode-button active" type="button" data-form-mode="simple" aria-pressed="true">Simple</button>
+                <button class="form-mode-button" type="button" data-form-mode="advanced" aria-pressed="false">Advanced</button>
+            </div>
+            <p data-form-mode-description>Essential fields for faster VM entry.</p>
+        </div>
+    `;
+}
+
+function initializeVmFormModes(form) {
+    const buttons = form.querySelectorAll("[data-form-mode]");
+    if (!buttons.length) {
+        return;
+    }
+    const description = form.querySelector("[data-form-mode-description]");
+    const setMode = (mode) => {
+        const isAdvanced = mode === "advanced";
+        form.dataset.formMode = mode;
+        form.querySelectorAll("[data-advanced-field]").forEach((field) => {
+            field.hidden = !isAdvanced;
+        });
+        buttons.forEach((button) => {
+            const isActive = button.dataset.formMode === mode;
+            button.classList.toggle("active", isActive);
+            button.setAttribute("aria-pressed", String(isActive));
+        });
+        if (description) {
+            description.textContent = isAdvanced
+                ? "All VM inventory and operational fields."
+                : "Essential fields for faster VM entry.";
+        }
+    };
+    buttons.forEach((button) => {
+        button.addEventListener("click", () => setMode(button.dataset.formMode));
+    });
+    setMode("simple");
 }
 
 function normalizedFormValue(name, value) {
