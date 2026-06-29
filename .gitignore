@@ -12,6 +12,7 @@ venv/
 env/
 .env
 .env.*
+!.env.example
 
 # Runtime data and generated reports
 instance/*.sqlite3

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 import secrets
-import sqlite3
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable
@@ -28,11 +27,12 @@ from werkzeug.utils import secure_filename
 
 from main import VirtualizationAdministrationToolkit
 
-from .database import close_db, get_db, init_database, row_to_dict
+from .database import DB_INTEGRITY_ERRORS, close_db, get_db, init_database, row_to_dict
 from .services import (
     create_resource,
     create_user_filter,
     create_user,
+    change_own_password,
     delete_user_filter,
     delete_resource,
     get_branding_settings,
@@ -46,6 +46,7 @@ from .services import (
     list_user_filters,
     list_users,
     restore_trash_item,
+    reset_user_password,
     set_user_permissions,
     update_branding_settings,
     update_resource,
@@ -75,6 +76,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     )
     app.config.from_mapping(
         SECRET_KEY=_secret_key(),
+        DATABASE_URL=os.getenv("DATABASE_URL", ""),
         DATABASE_PATH=PROJECT_ROOT / "instance" / "toolkit.sqlite3",
         PROJECT_ROOT=PROJECT_ROOT,
         MAX_CONTENT_LENGTH=1_048_576,
@@ -220,6 +222,21 @@ def _register_routes(app: Flask) -> None:
         except ValueError as exc:
             return jsonify({"message": str(exc)}), 400
 
+    @app.put("/api/account/password")
+    @login_required
+    def api_change_own_password() -> Response:
+        payload = request.get_json(silent=True) or {}
+        try:
+            result = change_own_password(
+                g.user["id"],
+                payload.get("current_password", ""),
+                payload.get("new_password", ""),
+                g.user["username"],
+            )
+            return jsonify(result)
+        except ValueError as exc:
+            return jsonify({"message": str(exc)}), 400
+
     @app.delete("/api/filters/<int:filter_id>")
     @login_required
     def api_delete_filter(filter_id: int) -> Response:
@@ -251,7 +268,7 @@ def _register_routes(app: Flask) -> None:
             return jsonify(created), 201
         except KeyError as exc:
             return jsonify({"message": f"Missing required field: {exc}"}), 400
-        except sqlite3.IntegrityError as exc:
+        except DB_INTEGRITY_ERRORS as exc:
             return jsonify({"message": f"Database rule failed: {exc}"}), 409
         except (TypeError, ValueError) as exc:
             return jsonify({"message": str(exc)}), 400
@@ -269,7 +286,7 @@ def _register_routes(app: Flask) -> None:
                 g.user["username"],
             )
             return jsonify(updated)
-        except sqlite3.IntegrityError as exc:
+        except DB_INTEGRITY_ERRORS as exc:
             return jsonify({"message": f"Database rule failed: {exc}"}), 409
         except (TypeError, ValueError) as exc:
             return jsonify({"message": str(exc)}), 400
@@ -281,7 +298,7 @@ def _register_routes(app: Flask) -> None:
         try:
             result = delete_resource(resource, resource_id, g.user["username"])
             return jsonify({"message": result["message"]}), result["status"]
-        except sqlite3.IntegrityError as exc:
+        except DB_INTEGRITY_ERRORS as exc:
             return jsonify({"message": f"Database rule failed: {exc}"}), 409
         except ValueError as exc:
             return jsonify({"message": str(exc)}), 404
@@ -299,7 +316,7 @@ def _register_routes(app: Flask) -> None:
         try:
             result = restore_trash_item(trash_id, g.user["username"])
             return jsonify({"message": result["message"]}), result["status"]
-        except sqlite3.IntegrityError as exc:
+        except DB_INTEGRITY_ERRORS as exc:
             return jsonify({"message": f"Restore failed: {exc}"}), 409
         except ValueError as exc:
             return jsonify({"message": str(exc)}), 400
@@ -341,7 +358,7 @@ def _register_routes(app: Flask) -> None:
             return jsonify(created), 201
         except KeyError as exc:
             return jsonify({"message": f"Missing required field: {exc}"}), 400
-        except sqlite3.IntegrityError as exc:
+        except DB_INTEGRITY_ERRORS as exc:
             return jsonify({"message": f"Database rule failed: {exc}"}), 409
         except ValueError as exc:
             return jsonify({"message": str(exc)}), 400
@@ -358,6 +375,21 @@ def _register_routes(app: Flask) -> None:
                 g.user["username"],
             )
             return jsonify(updated)
+        except ValueError as exc:
+            return jsonify({"message": str(exc)}), 400
+
+    @app.put("/api/users/<int:user_id>/password")
+    @login_required
+    @permission_required("users.manage")
+    def api_reset_user_password(user_id: int) -> Response:
+        payload = request.get_json(silent=True) or {}
+        try:
+            result = reset_user_password(
+                user_id,
+                payload.get("new_password", ""),
+                g.user["username"],
+            )
+            return jsonify(result)
         except ValueError as exc:
             return jsonify({"message": str(exc)}), 400
 

@@ -1,4 +1,4 @@
-"""SQLite persistence for the Virtualization Administration Toolkit web app."""
+"""Database persistence for the Virtualization Administration Toolkit web app."""
 
 from __future__ import annotations
 
@@ -9,6 +9,18 @@ from typing import Any
 
 from flask import current_app, g
 from werkzeug.security import generate_password_hash
+
+try:
+    import psycopg
+    from psycopg.rows import dict_row
+except ImportError:  # pragma: no cover - optional outside PostgreSQL deployments.
+    psycopg = None
+    dict_row = None
+
+DB_INTEGRITY_ERRORS = (
+    sqlite3.IntegrityError,
+    psycopg.IntegrityError if psycopg is not None else sqlite3.IntegrityError,
+)
 
 
 SCHEMA_SQL = """
@@ -154,6 +166,147 @@ CREATE TABLE IF NOT EXISTS app_settings (
 """
 
 
+POSTGRES_SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('admin', 'client')),
+    password_hash TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS permissions (
+    code TEXT PRIMARY KEY,
+    label TEXT NOT NULL,
+    description TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_permissions (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    permission_code TEXT NOT NULL REFERENCES permissions(code) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, permission_code)
+);
+
+CREATE TABLE IF NOT EXISTS clusters (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    environment TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Active',
+    notes TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS environments (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'Active',
+    notes TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS hosts (
+    id SERIAL PRIMARY KEY,
+    hostname TEXT NOT NULL UNIQUE,
+    cluster_id INTEGER NOT NULL REFERENCES clusters(id),
+    version TEXT NOT NULL,
+    build TEXT NOT NULL,
+    cpu TEXT NOT NULL,
+    memory TEXT NOT NULL,
+    nics INTEGER NOT NULL,
+    management_ip TEXT NOT NULL,
+    license TEXT NOT NULL,
+    health TEXT NOT NULL DEFAULT 'Healthy',
+    notes TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS datastores (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    datastore_type TEXT NOT NULL,
+    cluster_id INTEGER NOT NULL REFERENCES clusters(id),
+    capacity_gb INTEGER NOT NULL,
+    used_gb INTEGER NOT NULL,
+    notes TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS vlans (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    cidr TEXT NOT NULL,
+    security_zone TEXT NOT NULL,
+    notes TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS backup_jobs (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    schedule TEXT NOT NULL,
+    repository TEXT NOT NULL,
+    retention TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Success'
+);
+
+CREATE TABLE IF NOT EXISTS vms (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
+    environment TEXT NOT NULL,
+    business_unit TEXT NOT NULL,
+    owner TEXT NOT NULL,
+    application TEXT NOT NULL,
+    operating_system TEXT NOT NULL,
+    host_id INTEGER NOT NULL REFERENCES hosts(id),
+    cluster_id INTEGER NOT NULL REFERENCES clusters(id),
+    datastore_id INTEGER NOT NULL REFERENCES datastores(id),
+    folder TEXT NOT NULL,
+    resource_pool TEXT NOT NULL,
+    vcpu INTEGER NOT NULL,
+    ram_gb INTEGER NOT NULL,
+    disk_gb INTEGER NOT NULL,
+    ip_address TEXT NOT NULL,
+    vlan_id INTEGER NOT NULL REFERENCES vlans(id),
+    backup_enabled INTEGER NOT NULL DEFAULT 1,
+    backup_job_id INTEGER REFERENCES backup_jobs(id),
+    snapshot TEXT NOT NULL DEFAULT 'No',
+    guest_tools TEXT NOT NULL DEFAULT 'Current',
+    power_state TEXT NOT NULL DEFAULT 'Powered On',
+    criticality TEXT NOT NULL DEFAULT 'Medium',
+    notes TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS audit_events (
+    id SERIAL PRIMARY KEY,
+    actor TEXT NOT NULL,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_name TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS trash_items (
+    id SERIAL PRIMARY KEY,
+    resource TEXT NOT NULL,
+    resource_id INTEGER NOT NULL,
+    display_name TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    deleted_by TEXT NOT NULL,
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_filters (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    label TEXT NOT NULL,
+    target_view TEXT NOT NULL,
+    search_term TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+"""
+
+
 SEED_SQL = """
 INSERT OR IGNORE INTO clusters (name, environment, status, notes) VALUES
 ('Cluster-Production', 'Production', 'Active', 'Primary production compute'),
@@ -248,24 +401,119 @@ INSERT OR IGNORE INTO vms (
 """
 
 
+POSTGRES_SEED_SQL = (
+    SEED_SQL.replace("INSERT OR IGNORE INTO", "INSERT INTO")
+    .replace(";\n\nINSERT INTO", "\nON CONFLICT DO NOTHING;\n\nINSERT INTO")
+    .rstrip()
+    .removesuffix(";")
+    + "\nON CONFLICT DO NOTHING;"
+)
+
+
+class DatabaseConnection:
+    """Small compatibility wrapper for SQLite and PostgreSQL connections."""
+
+    def __init__(self, connection: Any, dialect: str) -> None:
+        self.connection = connection
+        self.dialect = dialect
+
+    def execute(self, sql: str, params: tuple[Any, ...] | list[Any] = ()) -> Any:
+        return self.connection.execute(self._translate_sql(sql), params)
+
+    def executemany(self, sql: str, params: list[tuple[Any, ...]]) -> Any:
+        translated = self._translate_sql(sql)
+        if self.dialect == "sqlite":
+            return self.connection.executemany(translated, params)
+        with self.connection.cursor() as cursor:
+            cursor.executemany(translated, params)
+            return cursor
+
+    def executescript(self, script: str) -> None:
+        if self.dialect == "sqlite":
+            self.connection.executescript(script)
+            return
+        for statement in script.split(";"):
+            if statement.strip():
+                self.execute(statement)
+
+    def commit(self) -> None:
+        self.connection.commit()
+
+    def close(self) -> None:
+        self.connection.close()
+
+    def __enter__(self) -> "DatabaseConnection":
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, traceback: Any) -> None:
+        if exc_type is None:
+            self.commit()
+        else:
+            self.connection.rollback()
+        self.close()
+
+    def _translate_sql(self, sql: str) -> str:
+        if self.dialect == "sqlite":
+            return sql
+        translated = sql.replace("%", "%%").replace("?", "%s")
+        translated = translated.replace("INSERT OR IGNORE INTO", "INSERT INTO")
+        if "INSERT INTO" in translated and "OR IGNORE" not in sql and "ON CONFLICT" not in translated:
+            pass
+        elif "INSERT INTO" in translated and "OR IGNORE" in sql and "ON CONFLICT" not in translated:
+            translated = translated.rstrip().rstrip(";") + " ON CONFLICT DO NOTHING"
+        translated = translated.replace(
+            "GROUP_CONCAT(DISTINCT datastores.name)",
+            "STRING_AGG(DISTINCT datastores.name, ',')",
+        )
+        translated = translated.replace(
+            "GROUP_CONCAT(hosts.memory)",
+            "STRING_AGG(hosts.memory, ',')",
+        )
+        translated = translated.replace(
+            "GROUP_CONCAT(DISTINCT hosts.hostname)",
+            "STRING_AGG(DISTINCT hosts.hostname, ',')",
+        )
+        return translated
+
+
 def database_path() -> Path:
     """Return the configured SQLite database path."""
     configured_path = current_app.config.get("DATABASE_PATH")
     return Path(configured_path)
 
 
-def get_db() -> sqlite3.Connection:
-    """Return a request-scoped SQLite connection."""
+def database_url() -> str:
+    """Return the configured PostgreSQL URL, when production DB mode is enabled."""
+    return str(current_app.config.get("DATABASE_URL") or "")
+
+
+def database_backend() -> str:
+    """Return the active database backend name."""
+    return "postgres" if database_url() else "sqlite"
+
+
+def connect_database() -> DatabaseConnection:
+    """Create a database connection for the configured backend."""
+    if database_backend() == "postgres":
+        if psycopg is None:
+            raise RuntimeError("psycopg is required when DATABASE_URL is set.")
+        connection = psycopg.connect(database_url(), row_factory=dict_row)
+        return DatabaseConnection(connection, "postgres")
+    connection = sqlite3.connect(database_path())
+    connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA foreign_keys = ON")
+    return DatabaseConnection(connection, "sqlite")
+
+
+def get_db() -> DatabaseConnection:
+    """Return a request-scoped database connection."""
     if "db" not in g:
-        connection = sqlite3.connect(database_path())
-        connection.row_factory = sqlite3.Row
-        connection.execute("PRAGMA foreign_keys = ON")
-        g.db = connection
+        g.db = connect_database()
     return g.db
 
 
 def close_db(_: BaseException | None = None) -> None:
-    """Close the request-scoped SQLite connection."""
+    """Close the request-scoped database connection."""
     connection = g.pop("db", None)
     if connection is not None:
         connection.close()
@@ -273,11 +521,20 @@ def close_db(_: BaseException | None = None) -> None:
 
 def init_database(app) -> None:
     """Create the database schema and seed demo enterprise data."""
+    if app.config.get("DATABASE_URL"):
+        with app.app_context(), connect_database() as connection:
+            connection.executescript(POSTGRES_SCHEMA_SQL)
+            _seed_permissions(connection)
+            _seed_users(connection)
+            _seed_app_settings(connection)
+            connection.executescript(POSTGRES_SEED_SQL)
+            _sync_environments(connection)
+            _normalize_virtualization_terms(connection)
+        return
+
     db_path = Path(app.config["DATABASE_PATH"])
     db_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with sqlite3.connect(db_path) as connection:
-        connection.execute("PRAGMA foreign_keys = ON")
+    with app.app_context(), connect_database() as connection:
         connection.executescript(SCHEMA_SQL)
         _migrate_schema(connection)
         _seed_permissions(connection)
@@ -289,8 +546,10 @@ def init_database(app) -> None:
         connection.commit()
 
 
-def _migrate_schema(connection: sqlite3.Connection) -> None:
+def _migrate_schema(connection: DatabaseConnection) -> None:
     """Apply lightweight schema upgrades for existing local databases."""
+    if connection.dialect != "sqlite":
+        return
     vm_columns = {
         row[1]
         for row in connection.execute("PRAGMA table_info(vms)").fetchall()
@@ -318,7 +577,7 @@ def _migrate_schema(connection: sqlite3.Connection) -> None:
         )
 
 
-def _normalize_virtualization_terms(connection: sqlite3.Connection) -> None:
+def _normalize_virtualization_terms(connection: DatabaseConnection) -> None:
     """Normalize existing demo/user data to vendor-neutral terminology."""
     replacements = (
         ("VM" + "ware ES" + "Xi", "Generic Hypervisor"),
@@ -352,15 +611,17 @@ def _normalize_virtualization_terms(connection: sqlite3.Connection) -> None:
 
 
 def _normalize_hostnames(
-    connection: sqlite3.Connection,
+    connection: DatabaseConnection,
     replacements: tuple[tuple[str, str], ...],
 ) -> None:
     """Normalize hostnames while preserving uniqueness."""
     rows = connection.execute(
         "SELECT id, hostname FROM hosts ORDER BY id"
     ).fetchall()
-    used_hostnames = {row[1] for row in rows}
-    for row_id, current_hostname in rows:
+    used_hostnames = {_row_value(row, "hostname", 1) for row in rows}
+    for row in rows:
+        row_id = _row_value(row, "id", 0)
+        current_hostname = _row_value(row, "hostname", 1)
         neutral_hostname = _neutralize_text(current_hostname, replacements)
         if neutral_hostname == current_hostname:
             continue
@@ -390,32 +651,48 @@ def _neutralize_text(
     return neutral_value
 
 
-def _application_tables(connection: sqlite3.Connection) -> list[str]:
+def _application_tables(connection: DatabaseConnection) -> list[str]:
     """Return application-owned tables that can contain display text."""
-    rows = connection.execute(
-        """
-        SELECT name
-        FROM sqlite_master
-        WHERE type = 'table'
-          AND name NOT LIKE 'sqlite_%'
-        """
-    ).fetchall()
-    return [row[0] for row in rows]
+    if connection.dialect == "postgres":
+        rows = connection.execute(
+            """
+            SELECT table_name AS name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+              AND table_type = 'BASE TABLE'
+            """
+        ).fetchall()
+    else:
+        rows = connection.execute(
+            """
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table'
+              AND name NOT LIKE 'sqlite_%'
+            """
+        ).fetchall()
+    return [_row_value(row, "name", 0) for row in rows]
 
 
 def _text_columns(
-    connection: sqlite3.Connection,
+    connection: DatabaseConnection,
     table_name: str,
 ) -> list[str]:
     """Return text columns for a table."""
-    rows = connection.execute(
-        f"PRAGMA table_info({_quote_identifier(table_name)})"
-    ).fetchall()
-    return [
-        row[1]
-        for row in rows
-        if "TEXT" in str(row[2]).upper()
-    ]
+    if connection.dialect == "postgres":
+        rows = connection.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = ?
+              AND data_type IN ('text', 'character varying')
+            """,
+            (table_name,),
+        ).fetchall()
+        return [row["column_name"] for row in rows]
+    rows = connection.execute(f"PRAGMA table_info({_quote_identifier(table_name)})").fetchall()
+    return [row[1] for row in rows if "TEXT" in str(row[2]).upper()]
 
 
 def _quote_identifier(identifier: str) -> str:
@@ -423,7 +700,7 @@ def _quote_identifier(identifier: str) -> str:
     return '"' + identifier.replace('"', '""') + '"'
 
 
-def _seed_permissions(connection: sqlite3.Connection) -> None:
+def _seed_permissions(connection: DatabaseConnection) -> None:
     """Seed assignable application permissions."""
     permissions = (
         (
@@ -461,11 +738,11 @@ def _seed_permissions(connection: sqlite3.Connection) -> None:
     )
 
 
-def _seed_users(connection: sqlite3.Connection) -> None:
+def _seed_users(connection: DatabaseConnection) -> None:
     """Seed admin and client users for role-based access demos."""
-    existing_user_count = connection.execute(
+    existing_user_count = _row_value(connection.execute(
         "SELECT COUNT(*) FROM users"
-    ).fetchone()[0]
+    ).fetchone(), "count", 0)
     if existing_user_count:
         return
 
@@ -510,7 +787,14 @@ def _required_seed_password(env_var: str) -> str:
     return password
 
 
-def _seed_app_settings(connection: sqlite3.Connection) -> None:
+def _row_value(row: Any, key: str, index: int) -> Any:
+    """Read a value from either a dict row or DB-API positional row."""
+    if isinstance(row, dict):
+        return row.get(key) if key in row else next(iter(row.values()))
+    return row[index]
+
+
+def _seed_app_settings(connection: DatabaseConnection) -> None:
     """Seed configurable branding defaults without overwriting user choices."""
     settings = (
         ("company_name", "Virtualization Administration Toolkit"),
@@ -531,7 +815,7 @@ def _seed_app_settings(connection: sqlite3.Connection) -> None:
     )
 
 
-def _sync_environments(connection: sqlite3.Connection) -> None:
+def _sync_environments(connection: DatabaseConnection) -> None:
     """Keep the environment catalog aligned with existing inventory values."""
     connection.execute(
         """
@@ -551,9 +835,11 @@ def _sync_environments(connection: sqlite3.Connection) -> None:
     )
 
 
-def row_to_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
-    """Convert a SQLite row to a plain dictionary."""
+def row_to_dict(row: Any | None) -> dict[str, Any] | None:
+    """Convert a database row to a plain dictionary."""
     if row is None:
         return None
+    if isinstance(row, dict):
+        return row
     return {key: row[key] for key in row.keys()}
 
